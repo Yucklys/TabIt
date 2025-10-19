@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Sense",
+  "version": "1.0.0",
+  "description": "AI Powered Tab Manager for Chrome",
+  "action": {
+	"default_popup": "index.html"
+  },
+  "permissions": []
+}
