@@ -4,7 +4,27 @@
   "version": "1.0.0",
   "description": "AI Powered Tab Manager for Chrome",
   "action": {
-	"default_popup": "index.html"
+    "default_popup": "index.html",
+    "default_title": "Tab Sense - AI Tab Manager"
   },
-  "permissions": []
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "scripting",
+    "tabGroups"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ]
 }
