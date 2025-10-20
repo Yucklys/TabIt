@@ -131,6 +131,185 @@ class TabManager {
         }
         break;
 
+      case 'closeMultipleTabs':
+        try {
+          await chrome.tabs.remove(request.tabIds);
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'pinTab':
+        try {
+          await chrome.tabs.update(request.tabId, { pinned: true });
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'unpinTab':
+        try {
+          await chrome.tabs.update(request.tabId, { pinned: false });
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'duplicateTab':
+        try {
+          const tab = await chrome.tabs.get(request.tabId);
+          await chrome.tabs.create({ url: tab.url });
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'bookmarkTab':
+        try {
+          const tab = await chrome.tabs.get(request.tabId);
+          await chrome.bookmarks.create({
+            title: tab.title,
+            url: tab.url
+          });
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'bookmarkMultipleTabs':
+        try {
+          const tabs = await chrome.tabs.query({});
+          const tabsToBookmark = tabs.filter(tab => request.tabIds.includes(tab.id));
+          
+          for (const tab of tabsToBookmark) {
+            await chrome.bookmarks.create({
+              title: tab.title,
+              url: tab.url
+            });
+          }
+          sendResponse({ success: true, count: tabsToBookmark.length });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'muteTab':
+        try {
+          await chrome.tabs.update(request.tabId, { muted: true });
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'unmuteTab':
+        try {
+          await chrome.tabs.update(request.tabId, { muted: false });
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'reloadTab':
+        try {
+          await chrome.tabs.reload(request.tabId);
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'moveTab':
+        try {
+          await chrome.tabs.move(request.tabId, { index: request.index });
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'saveSession':
+        try {
+          const tabs = await chrome.tabs.query({ currentWindow: true });
+          const sessionData = {
+            name: request.sessionName || `Session ${new Date().toLocaleString()}`,
+            tabs: tabs.map(tab => ({
+              url: tab.url,
+              title: tab.title,
+              pinned: tab.pinned
+            })),
+            timestamp: Date.now()
+          };
+          
+          const result = await chrome.storage.local.get(['sessions']);
+          const sessions = result.sessions || [];
+          sessions.push(sessionData);
+          await chrome.storage.local.set({ sessions });
+          
+          sendResponse({ success: true, sessionId: sessionData.timestamp });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'loadSession':
+        try {
+          const result = await chrome.storage.local.get(['sessions']);
+          const sessions = result.sessions || [];
+          const session = sessions.find(s => s.timestamp === request.sessionId);
+          
+          if (!session) {
+            sendResponse({ success: false, error: 'Session not found' });
+            return;
+          }
+          
+          // Close current tabs
+          const currentTabs = await chrome.tabs.query({ currentWindow: true });
+          const tabIds = currentTabs.map(tab => tab.id);
+          await chrome.tabs.remove(tabIds);
+          
+          // Open session tabs
+          for (const tabData of session.tabs) {
+            await chrome.tabs.create({
+              url: tabData.url,
+              pinned: tabData.pinned
+            });
+          }
+          
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'getSessions':
+        try {
+          const result = await chrome.storage.local.get(['sessions']);
+          const sessions = result.sessions || [];
+          sendResponse({ success: true, sessions });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case 'deleteSession':
+        try {
+          const result = await chrome.storage.local.get(['sessions']);
+          const sessions = result.sessions || [];
+          const filteredSessions = sessions.filter(s => s.timestamp !== request.sessionId);
+          await chrome.storage.local.set({ sessions: filteredSessions });
+          sendResponse({ success: true });
+        } catch (error) {
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
       case 'groupTabs':
         try {
           const result = await this.createTabGroups(request.tabs);

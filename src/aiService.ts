@@ -205,7 +205,7 @@ class AIService {
     const insights = this.generateInsights(tabs, groups, categoryBreakdown);
     
     // Generate recommendations
-    const recommendations = this.generateRecommendations(tabs, groups, categoryBreakdown);
+    const recommendations = this.generateRecommendations(tabs, groups);
 
     return {
       totalTabs: tabs.length,
@@ -221,7 +221,7 @@ class AIService {
   /**
    * Generate insights
    */
-  private generateInsights(tabs: TabData[], _groups: TabGroup, _categoryBreakdown: any[]): string[] {
+  private generateInsights(tabs: TabData[], _groups: TabGroup, categoryBreakdown: Array<{category: string; count: number; percentage: number}>): string[] {
     const insights: string[] = [];
     
     // Tab count insights
@@ -232,7 +232,7 @@ class AIService {
     }
 
     // Category distribution insights
-    const topCategory = categoryBreakdown.reduce((prev, current) => 
+    const topCategory = categoryBreakdown.reduce((prev: {category: string; count: number; percentage: number}, current: {category: string; count: number; percentage: number}) => 
       current.count > prev.count ? current : prev
     );
     
@@ -261,7 +261,7 @@ class AIService {
   /**
    * Generate recommendations
    */
-  private generateRecommendations(tabs: TabData[], groups: TabGroup, _categoryBreakdown: any[]): string[] {
+  private generateRecommendations(tabs: TabData[], groups: TabGroup): string[] {
     const recommendations: string[] = [];
     
     // Tab management recommendations
