@@ -23,6 +23,9 @@
     "storage",
     "scripting"
   ],
+  "optional_permissions": [
+    "ai"
+  ],
   "host_permissions": [
     "<all_urls>"
   ]

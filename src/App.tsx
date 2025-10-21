@@ -1,4 +1,5 @@
 // ==================== Chrome AI API Core Functions ====================
+// Based on https://developer.chrome.com/docs/ai/prompt-api
 // Pure functions only - No UI
 
 interface DownloadProgressEvent extends Event {
@@ -38,17 +39,15 @@ interface LanguageModel {
 
 declare global {
   interface Window {
-    ai?: {
-      languageModel?: {
-        availability(): Promise<'readily' | 'after-download' | 'no'>;
-        create(options?: { signal?: AbortSignal }): Promise<LanguageModel>;
-        params(): Promise<{
-          defaultTemperature: number;
-          maxTemperature: number;
-          defaultTopK: number;
-          maxTopK: number;
-        }>;
-      };
+    LanguageModel?: {
+      availability(): Promise<'readily' | 'after-download' | 'no'>;
+      create(options?: { signal?: AbortSignal }): Promise<LanguageModel>;
+      params(): Promise<{
+        defaultTemperature: number;
+        maxTemperature: number;
+        defaultTopK: number;
+        maxTopK: number;
+      }>;
     };
     Summarizer?: {
       availability(): Promise<'readily' | 'after-download' | 'no'>;
@@ -57,7 +56,7 @@ declare global {
   }
 }
 
-// ==================== Core API Functions ====================
+// ==================== Summarizer API ====================
 
 /**
  * Summarizer API - Generate summaries using Gemini Nano
@@ -69,8 +68,7 @@ export async function summarize(
     type?: 'key-points' | 'tldr' | 'teaser' | 'headline';
     length?: 'short' | 'medium' | 'long';
     format?: 'markdown' | 'plain-text';
-    sharedContext?: string;
-    outputLanguage?: 'en' ;
+    outputLanguage?: 'en' | 'es' | 'ja';
   } = {}
 ): Promise<string> {
   if (!window.Summarizer) {
@@ -86,50 +84,87 @@ export async function summarize(
     type = 'key-points',
     length = 'medium',
     format = 'markdown',
-    sharedContext = 'This is a scientific article',
     outputLanguage = 'en'
   } = options;
 
   const summarizer = await window.Summarizer.create({
-    sharedContext,
     type,
     format,
     length,
-    outputLanguage,
-    monitor(m) {
-      m.addEventListener('downloadprogress', (e) => {
-        console.log(`Model download: ${Math.round(e.loaded * 100)}%`);
-      });
-    }
+    outputLanguage
   });
 
   const result = await summarizer.summarize(text, {
-    context: 'This article is intended for a tech-savvy audience.'
+    context: 'Soving the problems that is the programmer should do'
   });
 
   summarizer.destroy();
   return result;
 }
 
+// ==================== Prompt API ====================
+
 /**
  * Prompt API - Send natural language requests to Gemini Nano
  * Usage: const result = await prompt("your question here");
  */
 export async function prompt(input: string): Promise<string> {
-  if (!window.ai?.languageModel) {
-    throw new Error('Prompt API not available');
+  if (!window.LanguageModel) {
+    throw new Error('Prompt API not available - window.LanguageModel not found');
   }
 
-  const availability = await window.ai.languageModel.availability();
+  const availability = await window.LanguageModel.availability();
   if (availability === 'no') {
     throw new Error('Prompt API is unavailable');
   }
+  
+  if (availability === 'after-download') {
+    throw new Error('Prompt API needs user gesture to download model');
+  }
 
-  const session = await window.ai.languageModel.create();
+  const session = await window.LanguageModel.create();
   const result = await session.prompt(input);
   session.destroy();
   
   return result;
+}
+
+/**
+ * Prompt API with streaming
+ * Usage: const result = await promptStreaming("your question here");
+ */
+export async function promptStreaming(input: string): Promise<string> {
+  if (!window.LanguageModel) {
+    throw new Error('Prompt API not available - window.LanguageModel not found');
+  }
+
+  const availability = await window.LanguageModel.availability();
+  if (availability === 'no') {
+    throw new Error('Prompt API is unavailable');
+  }
+  
+  if (availability === 'after-download') {
+    throw new Error('Prompt API needs user gesture to download model');
+  }
+
+  const session = await window.LanguageModel.create();
+  const stream = session.promptStreaming(input);
+  
+  let fullResult = '';
+  const reader = stream.getReader();
+  
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      fullResult = value;
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  
+  session.destroy();
+  return fullResult;
 }
 
 // ==================== Test Functions ====================
@@ -138,15 +173,11 @@ export async function prompt(input: string): Promise<string> {
  * Test Summarizer API with hardcoded input
  */
 export async function testSummarize(): Promise<void> {
-  console.log('=== Testing Summarizer API ===');
-  
   try {
-    const testText = "I don't know how to code";
-    console.log('Input:', testText);
-    
+    const testText = 'Solving the problems that is the programmer should do.';
+    console.log('Summarizer Input:', testText);
     const result = await summarize(testText);
-    console.log('Result:', result);
-    
+    console.log('Summarizer Result:', result);
   } catch (error) {
     console.error('Summarizer test failed:', error);
   }
@@ -156,15 +187,11 @@ export async function testSummarize(): Promise<void> {
  * Test Prompt API with hardcoded input
  */
 export async function testPrompt(): Promise<void> {
-  console.log('=== Testing Prompt API ===');
-  
   try {
     const testInput = 'Write a haiku about AI';
-    console.log('Input:', testInput);
-    
+    console.log('Prompt Input:', testInput);
     const result = await prompt(testInput);
-    console.log('Result:', result);
-    
+    console.log('Prompt Result:', result);
   } catch (error) {
     console.error('Prompt test failed:', error);
   }
@@ -174,15 +201,15 @@ export async function testPrompt(): Promise<void> {
 
 // Run tests immediately when loaded
 (async () => {
-  console.log('Starting AI API tests...');
+  // Test Summarizer API
+  if (window.Summarizer) {
+    await testSummarize();
+  }
   
-  // Test 1: Summarizer API
-  await testSummarize();
-  
-  // Test 2: Prompt API  
-  await testPrompt();
-  
-  console.log('All tests completed!');
+  // Test Prompt API
+  if (window.LanguageModel) {
+    await testPrompt();
+  }
 })();
 
 // Export empty component (required by React)

@@ -1,8 +1,6 @@
-/* Minimal styles for testing */
+/* Minimal styles */
 body {
   margin: 0;
-  padding: 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  background: white;
-  color: #333;
+  padding: 0;
+  font-family: Arial, sans-serif;
 }
