@@ -277,11 +277,6 @@ export async function testSmartCategorization(): Promise<void> {
       content: "Watch live NBA basketball game between Los Angeles Lakers and Golden State Warriors. Real-time scores, highlights, and commentary."
     },
     {
-      title: "NBA2 Live Stream - Lakers vs Warriors",
-      url: "https://espn.com/nba/live1",
-      content: "This is NBA second page Watch live NBA basketball game between Los Angeles Lakers and Golden State Warriors. Real-time scores, highlights, and commentary."
-    },
-    {
       title: "React Documentation - Hooks",
       url: "https://reactjs.org/docs/hooks-intro.html",
       content: "React Hooks let you use state and other React features without writing a class. Learn about useState, useEffect, and custom hooks."
