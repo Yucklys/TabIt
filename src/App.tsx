@@ -177,8 +177,9 @@ let categories: { [key: string]: Array<{title: string, url: string, content: str
  * Categorize a web page using Prompt API
  * Usage: const category = await categorizeTab(title, url, content);
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export async function categorizeTab(title: string, url: string, content: string): Promise<string> {
-  const promptText = `You are a browser tab manager and your job is to generate a category for the given web page. The result should be a single word describe what does this web page about. For example, an NBA live stream page will be categorize as 'Sports'. Your generation should follow this pattern: CATEGORY: <Page Category>, EXPLAINATION: <Why you think this is the correct category>, CONFIDENCE: <How confident are you about your answer, where 1 means totally confident and 0 means totally not confident>
+  const promptText = `tab manager and  job is to generate a category for the given web page. The result should be a single word describe what does this web page about. For example, an NBA live stream page will be categorize as 'Sports'. Your generation should follow this pattern: CATEGORY: <Page Category>, EXPLAINATION: <Why you think this is the correct category>, CONFIDENCE: <How confident are you about your answer, where 1 means totally confident and 0 means totally not confident>
 
 Page Title: ${title}
 Page URL: ${url}
@@ -191,6 +192,7 @@ Page Content: ${content.substring(0, 1000)}...`;
  * Check if a new tab belongs to existing categories
  * Usage: const result = await checkExistingCategories(title, url, content);
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export async function checkExistingCategories(title: string, url: string, content: string): Promise<{category: string, isNew: boolean}> {
   const existingCategories = Object.keys(categories);
   
@@ -222,9 +224,23 @@ Respond in format: EXISTING_CATEGORY: <category_name_or_NEW_CATEGORY>, SUGGESTED
     categories[suggestedCategory] = [{title, url, content}];
     return {category: suggestedCategory, isNew: true};
   } else {
-    // Add to existing category
-    categories[existingCategory].push({title, url, content});
-    return {category: existingCategory, isNew: false};
+    // Find the exact matching category key (case-insensitive)
+    const matchingKey = existingCategories.find(key => 
+      key.toLowerCase() === existingCategory.toLowerCase()
+    );
+    
+    if (matchingKey) {
+      // Add to existing category
+      if (!categories[matchingKey]) {
+        categories[matchingKey] = [];
+      }
+      categories[matchingKey].push({title, url, content});
+      return {category: matchingKey, isNew: false};
+    } else {
+      // Category not found, create new one
+      categories[existingCategory] = [{title, url, content}];
+      return {category: existingCategory, isNew: true};
+    }
   }
 }
 
@@ -370,7 +386,8 @@ export async function testTabCategorization(): Promise<void> {
       console.log(`URL: ${tab.url}`);
       const result = await categorizeTab(tab.title, tab.url, tab.content);
       console.log('Result:', result);
-    } catch (error) {
+    } 
+    catch (error) {
       console.error(`Failed to categorize ${tab.title}:`, error);
     }
   }
