@@ -7,26 +7,7 @@
     "default_popup": "index.html",
     "default_title": "Tab Sense - AI Tab Manager"
   },
-  "background": {
-    "service_worker": "background.js"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ],
   "permissions": [
-    "tabs",
-    "activeTab",
-    "storage",
-    "scripting"
-  ],
-  "optional_permissions": [
-    "ai"
-  ],
-  "host_permissions": [
-    "<all_urls>"
+    "storage"
   ]
 }
