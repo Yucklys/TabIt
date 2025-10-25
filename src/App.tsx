@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 // ==================== Chrome AI API Core Functions ====================
 // Based on https://developer.chrome.com/docs/ai/prompt-api
 // Pure functions only - No UI
@@ -5,6 +6,27 @@
 interface DownloadProgressEvent extends Event {
   loaded: number;
   total: number;
+=======
+import { useEffect } from 'react'
+import { categorizeAllTabsSmart } from './api';
+
+export default function App() {
+  useEffect(() => {
+    // Automatically run categorization when the extension loads
+    const runCategorization = async () => {
+      try {
+        await categorizeAllTabsSmart(); // 智能选择最佳策略
+      } catch (error) {
+        console.error('Error in TabSense extension:', error);
+      }
+    };
+
+    runCategorization();
+  }, []);
+
+  // Return empty component - all output goes to console
+  return null;
+>>>>>>> Stashed changes
 }
 
 interface AICreateMonitor {
