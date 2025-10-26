@@ -23,8 +23,7 @@ export async function categorizeAllTabsSmart(): Promise<void> {
     console.log(`Found ${tabs.length} tabs, ${tabInfoList.length} valid tabs`);
     
     // Use 5 batches
-    const batchCount = 5;
-    await categorizeAllTabsHybrid(batchCount);
+    await categorizeAllTabsHybrid();
     
   } catch (error) {
     console.error('Error in categorization:', error);

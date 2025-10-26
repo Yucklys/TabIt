@@ -1,6 +1,89 @@
 import { checkExistingCategories, clearCategories, categorizeTabsBatch } from './ai.ts';
 import { getUngroupedTabs, getTabInfoList } from './tabs.ts';
 
+// Global category store for merging similar categories
+const globalCategories: { [key: string]: { confidence: number, count: number } } = {};
+
+/**
+ * Merge similar categories based on confidence threshold
+ */
+function mergeSimilarCategories(category: string, confidence: number): string {
+  const threshold = 0.7;
+  
+  // If confidence is low, create a new category
+  if (confidence < threshold) {
+    return category;
+  }
+  
+  // Check if this category is similar to existing ones
+  for (const [existingCategory, data] of Object.entries(globalCategories)) {
+    if (isSimilarCategory(category, existingCategory)) {
+      // Choose the shorter, more general category name
+      const finalCategory = chooseBetterCategoryName(category, existingCategory);
+      
+      // Update the existing category
+      globalCategories[finalCategory] = { 
+        confidence: Math.max(data.confidence, confidence), 
+        count: data.count + 1 
+      };
+      
+      // Remove the old category if we're using a different name
+      if (finalCategory !== existingCategory) {
+        delete globalCategories[existingCategory];
+      }
+      
+      return finalCategory;
+    }
+  }
+  
+  // Create new category
+  globalCategories[category] = { confidence, count: 1 };
+  return category;
+}
+
+/**
+ * Choose the better category name between two similar categories
+ */
+function chooseBetterCategoryName(cat1: string, cat2: string): string {
+  // Prefer shorter names (more general)
+  if (cat1.length < cat2.length) {
+    return cat1;
+  } else if (cat2.length < cat1.length) {
+    return cat2;
+  }
+  
+  // If same length, prefer the one that appears first alphabetically
+  return cat1 < cat2 ? cat1 : cat2;
+}
+
+/**
+ * Check if two categories are similar
+ */
+function isSimilarCategory(cat1: string, cat2: string): boolean {
+  const cat1Lower = cat1.toLowerCase();
+  const cat2Lower = cat2.toLowerCase();
+  
+  // Check for exact matches
+  if (cat1Lower === cat2Lower) {
+    return true;
+  }
+  
+  // Check for partial word matches (e.g., "self-assessment" vs "self-discovery")
+  const words1 = cat1Lower.split(/[\s\-&]+/);
+  const words2 = cat2Lower.split(/[\s\-&]+/);
+  
+  for (const word1 of words1) {
+    for (const word2 of words2) {
+      if (word1.length > 3 && word2.length > 3 && 
+          (word1.includes(word2) || word2.includes(word1))) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
 /**
  * BATCH method - Single AI call for all tabs
  */
@@ -55,7 +138,7 @@ export async function categorizeAllTabsBatch(): Promise<void> {
 /**
  * HYBRID method - Fixed batch count with parallel processing
  */
-export async function categorizeAllTabsHybrid(batchCount: number = 5): Promise<void> {
+export async function categorizeAllTabsHybrid(): Promise<void> {
   try {
     const startTime = Date.now();
     const tabs = await getUngroupedTabs();
@@ -64,12 +147,16 @@ export async function categorizeAllTabsHybrid(batchCount: number = 5): Promise<v
     console.log(`Found ${tabs.length} tabs, ${tabInfoList.length} valid tabs`);
     clearCategories();
     
+    // Clear global categories for this run
+    Object.keys(globalCategories).forEach(key => delete globalCategories[key]);
+    
     // Display tabs for reference
     tabInfoList.forEach(tab => {
       console.log(`Tab ${tab.index}:`, `{index: ${tab.index}, url: "${tab.url}", title: "${tab.title}"}`);
     });
     
-    // Split tabs into fixed number of batches
+    // Split into 5 batches using array slice
+    const batchCount = 5;
     const batchSize = Math.ceil(tabInfoList.length / batchCount);
     const batches: Array<Array<{index: number, title: string, url: string}>> = [];
     
@@ -91,10 +178,14 @@ export async function categorizeAllTabsHybrid(batchCount: number = 5): Promise<v
           const tab = batch[localIndex];
           if (tab) {
             const globalIndex = tab.index; // Get the actual global index
-            if (!batchResultFormatted[data.category]) {
-              batchResultFormatted[data.category] = [];
+            
+            // Merge similar categories based on confidence
+            const finalCategory = mergeSimilarCategories(data.category, data.confidence);
+            
+            if (!batchResultFormatted[finalCategory]) {
+              batchResultFormatted[finalCategory] = [];
             }
-            batchResultFormatted[data.category].push(globalIndex);
+            batchResultFormatted[finalCategory].push(globalIndex);
           }
         }
         
