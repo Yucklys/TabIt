@@ -112,113 +112,78 @@ export async function promptStreaming(input: string): Promise<string> {
   return fullResult;
 }
 
-let categories: { [key: string]: Array<{title: string, url: string, content: string}> } = {};
+// User custom prompt storage
+let customPrompt: string = '';
 
-/**
- * Categorize a web page using Prompt API
- * Usage: const category = await categorizeTab(title, url, content);
- */
-// eslint-disable-next-line react-refresh/only-export-components
-export async function categorizeTab(title: string, url: string, content: string): Promise<string> {
-  const promptText = `tab manager and  job is to generate a category for the given web page. The result should be a single word describe what does this web page about. For example, an NBA live stream page will be categorize as 'Sports'. Your generation should follow this pattern: CATEGORY: <Page Category>, EXPLAINATION: <Why you think this is the correct category>, CONFIDENCE: <How confident are you about your answer, where 1 means totally confident and 0 means totally not confident>
+export function setCustomPrompt(prompt: string): void {
+  customPrompt = prompt;
+  console.log('AI.ts: Custom prompt stored:', prompt || '(empty)');
+}
 
-Page Title: ${title}
-Page URL: ${url}
-Page Content: ${content.substring(0, 1000)}...`;
+export function getCustomPrompt(): string {
+  return customPrompt;
+}
 
-  return await prompt(promptText);
+export function clearCustomPrompt(): void {
+  customPrompt = '';
 }
 
 /**
- * Check if a new tab belongs to existing categories
- * Usage: const result = await checkExistingCategories(title, url, content);
+ * Batch categorize multiple tabs at once
  */
-// eslint-disable-next-line react-refresh/only-export-components
-export async function checkExistingCategories(title: string, url: string, content: string): Promise<{category: string, isNew: boolean}> {
-  const existingCategories = Object.keys(categories);
+export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<{ [index: number]: {category: string, confidence: number} }> {
+  const tabsInfo = tabs.map((tab, localIndex) => `${localIndex}: ${tab.title} (${tab.url})`).join('\n');
   
-  if (existingCategories.length === 0) {
-    // No existing categories, create new one
-    const newCategory = await categorizeTab(title, url, content);
-    const categoryName = extractCategoryName(newCategory);
-    categories[categoryName] = [{title, url, content}];
-    return {category: categoryName, isNew: true};
+  // Log custom prompt usage
+  if (customPrompt) {
+    console.log('Using custom prompt:', customPrompt);
   }
-
-  // Check against existing categories
-  const categoryCheckPrompt = `You are a browser tab manager. I have existing categories: ${existingCategories.join(', ')}. 
-
-For the given web page, determine if it belongs to any of these existing categories. If yes, return the most appropriate existing category name. If no, return "NEW_CATEGORY" and suggest a new category name.
-
-Page Title: ${title}
-Page URL: ${url}
-Page Content: ${content.substring(0, 500)}...
-
-Respond in format: EXISTING_CATEGORY: <category_name_or_NEW_CATEGORY>, SUGGESTED_CATEGORY: <new_category_if_needed>`;
-
-  const result = await prompt(categoryCheckPrompt);
-  const existingCategory = extractExistingCategory(result);
   
-  if (existingCategory === "NEW_CATEGORY") {
-    // Create new category
-    const suggestedCategory = extractSuggestedCategory(result);
-    categories[suggestedCategory] = [{title, url, content}];
-    return {category: suggestedCategory, isNew: true};
-  } else {
-    // Find the exact matching category key (case-insensitive)
-    const matchingKey = existingCategories.find(key => 
-      key.toLowerCase() === existingCategory.toLowerCase()
-    );
+  
+  const promptText = `${customPrompt ? `CRITICAL: Follow this instruction exactly: ${customPrompt}
+
+` : ''}Analyze these browser tabs and group them.
+
+Rules:
+1. Group tabs from the SAME website together
+2. Use category names as specified
+3. Apply any custom grouping instructions provided
+
+Return JSON format: {"0": {"category": "CategoryName", "confidence": 0.9}}
+
+Tabs:
+${tabsInfo}`;
+
+  const response = await prompt(promptText);
+  
+  try {
+    // Try to extract JSON from the response
+    let jsonStr = response.trim();
     
-    if (matchingKey) {
-      // Add to existing category
-      if (!categories[matchingKey]) {
-        categories[matchingKey] = [];
-      }
-      categories[matchingKey].push({title, url, content});
-      return {category: matchingKey, isNew: false};
-    } else {
-      // Category not found, create new one
-      categories[existingCategory] = [{title, url, content}];
-      return {category: existingCategory, isNew: true};
+    // Remove markdown code blocks if present
+    if (jsonStr.startsWith('```json')) {
+      jsonStr = jsonStr.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (jsonStr.startsWith('```')) {
+      jsonStr = jsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
+    
+    // Find JSON object in the response
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
+    }
+    
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error('Failed to parse AI response as JSON:', response);
+    console.error('Parse error:', error);
+    
+    // Fallback: assign "General" to all tabs using local indices
+    const fallback: { [index: number]: {category: string, confidence: number} } = {};
+    tabs.forEach((_, localIndex) => fallback[localIndex] = {category: 'General', confidence: 0.5});
+    return fallback;
   }
 }
 
-/**
- * Extract category name from AI response
- */
-function extractCategoryName(response: string): string {
-  const match = response.match(/CATEGORY:\s*([^,]+)/i);
-  return match ? match[1].trim() : 'Uncategorized';
-}
 
-/**
- * Extract existing category from AI response
- */
-function extractExistingCategory(response: string): string {
-  const match = response.match(/EXISTING_CATEGORY:\s*([^,]+)/i);
-  return match ? match[1].trim() : 'NEW_CATEGORY';
-}
 
-/**
- * Extract suggested category from AI response
- */
-function extractSuggestedCategory(response: string): string {
-  const match = response.match(/SUGGESTED_CATEGORY:\s*([^,]+)/i);
-  return match ? match[1].trim() : 'Uncategorized';
-}
-
-/**
- * Get all categories and their tabs
- */
-export function getCategories(): { [key: string]: Array<{title: string, url: string, content: string}> } {
-  return categories;
-}
-
-/**
- * Clear all categories
- */
-export function clearCategories(): void {
-  categories = {};
-}
