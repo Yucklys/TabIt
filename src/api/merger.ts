@@ -65,6 +65,12 @@ function isSimilarCategory(cat1: string, cat2: string): boolean {
     return true;
   }
   
+  // Special cases: merge duplicate broad categories
+  const broadCategories = ['entertainment', 'development', 'productivity', 'communication'];
+  if (broadCategories.includes(cat1Lower) && broadCategories.includes(cat2Lower)) {
+    return true;
+  }
+  
   // Check for partial word matches (e.g., "self-assessment" vs "self-discovery")
   const words1 = cat1Lower.split(/[\s\-&]+/);
   const words2 = cat2Lower.split(/[\s\-&]+/);

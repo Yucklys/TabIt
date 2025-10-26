@@ -1,18 +1,18 @@
 import { useEffect } from 'react'
-import { categorizeAllTabsSmart } from './api';
+import { oneTimeGrouping } from './api';
 
 export default function App() {
   useEffect(() => {
-    // Automatically run categorization when the extension loads
-    const runCategorization = async () => {
+    // Run AI categorization + create tab groups automatically
+    const runGrouping = async () => {
       try {
-        await categorizeAllTabsSmart(); 
+        await oneTimeGrouping(); // AI categorize + create tab groups
       } catch (error) {
         console.error('Error in TabSense extension:', error);
       }
     };
 
-    runCategorization();
+    runGrouping();
   }, []);
 
   // Return empty component - all output goes to console

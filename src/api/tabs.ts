@@ -23,9 +23,6 @@ const getTabInfo = (tab: chrome.tabs.Tab, index: number): TabInfo => {
 }
 
 export const getTabInfoList = (tabs: chrome.tabs.Tab[]): TabInfo[] => {
-  const validTabs = tabs.filter(tab => 
-    tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')
-  );
-  
-  return validTabs.map((tab, index) => getTabInfo(tab, index));
+  // Keep original index even for invalid tabs
+  return tabs.map(tab => getTabInfo(tab, tab.index));
 }

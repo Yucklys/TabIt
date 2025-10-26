@@ -126,7 +126,9 @@ Rules:
 2. Be specific and descriptive
 3. Use your judgment to determine the most appropriate category
 
+
 Return format: CATEGORY: <category name>, CONFIDENCE: <0.0-1.0>
+
 
 Page Title: ${title}
 Page URL: ${url}`;
@@ -138,11 +140,22 @@ Page URL: ${url}`;
  * Batch categorize multiple tabs at once
  */
 export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<{ [index: number]: {category: string, confidence: number} }> {
-  const tabsInfo = tabs.map((tab, localIndex) => `${localIndex}: ${tab.title}`).join('\n');
+  const tabsInfo = tabs.map((tab, localIndex) => `${localIndex}: ${tab.title} (${tab.url})`).join('\n');
   
-  const promptText = `Categorize these tabs. Use categories: Development, Entertainment, AI Tools, Communication, Local Development, News, Shopping, Education, Business, Technology.
+  const promptText = `Analyze these browser tabs and group them by website/domain. Focus on the URL domain.
 
-Return JSON with local index as key: {"0": {"category": "Development", "confidence": 0.9}}
+Rules:
+1. Group tabs from the SAME website together
+2. Use the website name as category name if appear many times in the tabs:
+   - youtube.com tabs → "YouTube"
+   - chatgpt.com tabs → "GPT"
+   - github.com tabs → "GitHub" 
+   - stackoverflow.com tabs → "StackOverflow"
+   - reddit.com tabs → "Reddit"
+3. If only 1 tab from a website, still use website name
+4. Only use broad categories if website is unclear
+
+Return JSON format: {"0": {"category": "WebsiteName", "confidence": 0.9}}
 
 Tabs:
 ${tabsInfo}`;
@@ -166,14 +179,47 @@ ${tabsInfo}`;
       jsonStr = jsonMatch[0];
     }
     
-    return JSON.parse(jsonStr);
+    const parsed = JSON.parse(jsonStr);
+    
+    // Ensure ALL tabs have results
+    const allResults: { [index: number]: {category: string, confidence: number} } = {};
+    tabs.forEach((tab, localIndex) => {
+      if (parsed[localIndex.toString()]) {
+        allResults[localIndex] = parsed[localIndex.toString()];
+      } else {
+        // Missing tab: extract domain from URL as fallback
+        const url = tab.url;
+        const match = url.match(/\/\/(?:www\.)?([^/]+)/);
+        if (match) {
+          const fullDomain = match[1];
+          const parts = fullDomain.split('.');
+          const category = parts.length >= 2 ? parts[parts.length - 2] : fullDomain.split('.')[0];
+          allResults[localIndex] = { category: category.charAt(0).toUpperCase() + category.slice(1), confidence: 0.8 };
+        } else {
+          allResults[localIndex] = { category: 'General', confidence: 0.5 };
+        }
+      }
+    });
+    
+    return allResults;
   } catch (error) {
     console.error('Failed to parse AI response as JSON:', response);
     console.error('Parse error:', error);
     
-    // Fallback: assign "General" to all tabs using local indices
+    // Fallback: extract domain from URL for each tab
     const fallback: { [index: number]: {category: string, confidence: number} } = {};
-    tabs.forEach((_, localIndex) => fallback[localIndex] = {category: 'General', confidence: 0.5});
+    tabs.forEach((tab, localIndex) => {
+      const url = tab.url;
+      const match = url.match(/\/\/(?:www\.)?([^/]+)/);
+      if (match) {
+        const fullDomain = match[1];
+        const parts = fullDomain.split('.');
+        const category = parts.length >= 2 ? parts[parts.length - 2] : fullDomain.split('.')[0];
+        fallback[localIndex] = { category: category.charAt(0).toUpperCase() + category.slice(1), confidence: 0.7 };
+      } else {
+        fallback[localIndex] = { category: 'General', confidence: 0.5 };
+      }
+    });
     return fallback;
   }
 }

@@ -1,35 +1,87 @@
-// Export all categorization strategies
-export { categorizeAllTabsBatch, categorizeAllTabsHybrid, categorizeAllTabsParallel } from './strategies';
-export { type CategorizedTab } from './categorizer';
-
-// Export AI functions
-export { categorizeTab, categorizeTabsBatch, checkExistingCategories, getCategories, clearCategories } from './ai';
-
-// Export tab utilities
-export { getUngroupedTabs, getTabInfoList, type TabInfo } from './tabs';
-
-// Export merger functions
-export { mergeSimilarCategories, clearGlobalCategories } from './merger';
-
-// Smart categorization method with fixed batch count
-import { categorizeAllTabsHybrid } from './strategies';
-import { getUngroupedTabs, getTabInfoList } from './tabs';
+// Import required functions
+import { categorizeTabsBatch, clearCategories } from './ai';
+import { createGroupFromIndicesWithTabs } from './tabGroups';
+import { mergeSimilarCategories, clearGlobalCategories } from './merger';
+import { getTabInfoList } from './tabs';
 
 /**
- * Categorize all tabs using 5 batches
+ * One-time grouping: Categorize tabs and create tab groups automatically
  */
-export async function categorizeAllTabsSmart(): Promise<void> {
+export async function oneTimeGrouping(): Promise<void> {
   try {
-    const tabs = await getUngroupedTabs();
-    const tabInfoList = getTabInfoList(tabs);
+    // Get all tabs once
+    const allTabs = await chrome.tabs.query({});
     
-    console.log(`Found ${tabs.length} tabs, ${tabInfoList.length} valid tabs`);
+    const categorizedResult = await categorizeAndGroup();
     
-    // Use 5 batches
-    await categorizeAllTabsHybrid();
+    // Create all groups in parallel for speed
+    const groupPromises = Object.entries(categorizedResult).map(async ([categoryName, tabIndices]) => {
+      if (tabIndices && tabIndices.length > 0) {
+        return await createGroupFromIndicesWithTabs(tabIndices, categoryName, allTabs);
+      }
+      return null;
+    });
+    
+    const results = await Promise.all(groupPromises);
+    const createdGroupsCount = results.filter(r => r !== null).length;
+
+    console.log(`Created ${createdGroupsCount} tab groups`);
     
   } catch (error) {
-    console.error('Error in categorization:', error);
+    console.error('Error in one-time grouping:', error);
     throw error;
   }
+}
+
+async function categorizeAndGroup() {
+  const startTime = Date.now();
+  
+  const tabs = await chrome.tabs.query({});
+  const allTabInfoList = getTabInfoList(tabs);
+  
+  // Filter out invalid tabs (chrome://, chrome-extension://)
+  const validTabInfoList = allTabInfoList.filter(tab =>
+    tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')
+  );
+  
+  clearCategories();
+  clearGlobalCategories();
+
+  // Display ALL tabs (including invalid) for reference
+  allTabInfoList.forEach((tab) => {
+    const isValid = tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://');
+    if (isValid) {
+      console.log(`Tab ${tab.index}:`, `{index: ${tab.index}, url: "${tab.url}", title: "${tab.title}"}`);
+    } else {
+      console.log(`Tab ${tab.index}: INVALID (filtered)`);
+    }
+  });
+
+  // Process all tabs in ONE batch for better context awareness
+  const batchResult = await categorizeTabsBatch(validTabInfoList);
+  
+  // Process results - map local indices to global tab indices
+  const categorizedResult: { [category: string]: number[] } = {};
+  for (const [localIndexStr, data] of Object.entries(batchResult)) {
+    const localIndex = parseInt(localIndexStr);
+    const tab = validTabInfoList[localIndex];
+    if (tab) {
+      const globalIndex = tab.index;
+      const finalCategory = mergeSimilarCategories(data.category, data.confidence);
+
+      if (!categorizedResult[finalCategory]) {
+        categorizedResult[finalCategory] = [];
+      }
+      categorizedResult[finalCategory].push(globalIndex);
+    }
+  }
+  
+  console.log('Final Result:');
+  console.log(categorizedResult);
+  
+  const endTime = Date.now();
+  const runTime = (endTime - startTime) / 1000;
+  console.log(`Completed in ${runTime.toFixed(2)}s`);
+  
+  return categorizedResult;
 }
