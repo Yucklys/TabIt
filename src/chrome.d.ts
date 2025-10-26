@@ -12,6 +12,7 @@ declare global {
               function query(queryInfo: object, callback: (result: Tab[]) => void): void;
               function query(queryInfo: object): Promise<Tab[]>;
               function group(options: { tabIds: number[], groupId?: number }): Promise<number>;
+              function ungroup(tabIds: number[]): Promise<void>;
             }
 
     namespace tabGroups {

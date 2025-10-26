@@ -7,15 +7,6 @@ export interface TabGroupInfo {
   collapsed: boolean;
 }
 
-import '../chrome.d.ts';
-
-export interface TabGroupInfo {
-  id: number;
-  title: string;
-  color: string;
-  collapsed: boolean;
-}
-
 /**
  * Create a tab group with given tab indices and name
  */
@@ -163,3 +154,5 @@ export async function createGroupFromIndicesWithTabs(tabIndices: number[], group
     return null;
   }
 }
+
+

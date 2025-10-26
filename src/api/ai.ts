@@ -112,28 +112,20 @@ export async function promptStreaming(input: string): Promise<string> {
   return fullResult;
 }
 
-let categories: { [key: string]: Array<{title: string, url: string, content: string, explanation: string, confidence: number}> } = {};
+// User custom prompt storage
+let customPrompt: string = '';
 
-/**
- * Categorize a web page using Prompt API
- * Usage: const category = await categorizeTab(title, url, content);
- */
-export async function categorizeTab(title: string, url: string): Promise<string> {
-  const promptText = `You are a browser tab manager. Analyze the URL and title to create a meaningful category name. NEVER use "Uncategorized" or "Other".
+export function setCustomPrompt(prompt: string): void {
+  customPrompt = prompt;
+  console.log('AI.ts: Custom prompt stored:', prompt || '(empty)');
+}
 
-Rules:
-1. Create a category name that describes the tab's purpose
-2. Be specific and descriptive
-3. Use your judgment to determine the most appropriate category
+export function getCustomPrompt(): string {
+  return customPrompt;
+}
 
-
-Return format: CATEGORY: <category name>, CONFIDENCE: <0.0-1.0>
-
-
-Page Title: ${title}
-Page URL: ${url}`;
-
-  return await prompt(promptText);                                                                                                                                                                                                                                
+export function clearCustomPrompt(): void {
+  customPrompt = '';
 }
 
 /**
@@ -141,30 +133,23 @@ Page URL: ${url}`;
  */
 export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<{ [index: number]: {category: string, confidence: number} }> {
   const tabsInfo = tabs.map((tab, localIndex) => `${localIndex}: ${tab.title} (${tab.url})`).join('\n');
-  /*
-  需要完善
-  */
-  const promptText = `Analyze these browser tabs and group them by website/domain. Focus on the URL domain.
+  
+  // Log custom prompt usage
+  if (customPrompt) {
+    console.log('Using custom prompt:', customPrompt);
+  }
+  
+  
+  const promptText = `${customPrompt ? `CRITICAL: Follow this instruction exactly: ${customPrompt}
+
+` : ''}Analyze these browser tabs and group them.
 
 Rules:
 1. Group tabs from the SAME website together
-2. Use the website name as category name:
+2. Use category names as specified
+3. Apply any custom grouping instructions provided
 
-   - youtube.com tabs → "YouTube"
-   - github.com tabs → "GitHub" 
-   - stackoverflow.com tabs → "StackOverflow"
-   - reddit.com tabs → "Reddit"
-3. If only 1 tab from a website, still use website name
-4. Only use broad categories if website is unclear
-
-Return JSON format: {"0": {"category": "WebsiteName", "confidence": 0.9}}
-
-Important:
-
-User input: 
-
-
-
+Return JSON format: {"0": {"category": "CategoryName", "confidence": 0.9}}
 
 Tabs:
 ${tabsInfo}`;
@@ -200,81 +185,5 @@ ${tabsInfo}`;
   }
 }
 
-/**
- * Check if a new tab belongs to existing categories
- * Usage: const result = await checkExistingCategories(title, url, content);
- */
-export async function checkExistingCategories(title: string, url: string, content: string): Promise<{category: string, explanation: string, confidence: number, isNew: boolean}> {
-  // Get category and confidence from AI
-  const aiResponse = await categorizeTab(title, url);
-  const categoryName = extractCategoryName(aiResponse);
-  const confidence = extractConfidence(aiResponse);
-  
-  // Add to categories
-  if (!categories[categoryName]) {
-    categories[categoryName] = [];
-  }
-  categories[categoryName].push({title, url, content, explanation: 'AI categorized', confidence});
-  
-  return {
-    category: categoryName,
-    explanation: 'AI categorized',
-    confidence,
-    isNew: categories[categoryName].length === 1
-  };
-}
 
 
-/**
- * Extract category name from AI response
- */
-function extractCategoryName(response: string): string {
-  const match = response.match(/CATEGORY:\s*([^,]+)/i);
-  const category = match ? match[1].trim() : '';
-  
-  // If no category found, analyze the response to create one
-  if (!category || category.toLowerCase() === 'uncategorized' || category.toLowerCase() === 'other') {
-    // Try to extract any meaningful word from the response
-    const words = response.toLowerCase().match(/\b(development|entertainment|communication|local|news|shopping|education|business|sports|technology|programming|ai|tools|video|content|help|tutorial|guide)\b/);
-    if (words) {
-      return words[0].charAt(0).toUpperCase() + words[0].slice(1);
-    }
-    return 'Web Content';
-  }
-  
-  return category;
-}
-
-/**
- * Extract explanation from AI response
- */
-export function extractExplanation(response: string): string {
-  const match = response.match(/EXPLANATION:\s*([^,]+)/i);
-  return match ? match[1].trim() : 'Categorized based on page content and URL';
-}
-
-/**
- * Extract confidence from AI response
- */
-export function extractConfidence(response: string): number {
-  const match = response.match(/CONFIDENCE:\s*([0-9.]+)/i);
-  const confidence = match ? parseFloat(match[1]) : 0.8;
-  
-  // Ensure confidence is between 0 and 1
-  return Math.max(0, Math.min(1, confidence));
-}
-
-
-/**
- * Get all categories and their tabs
- */
-export function getCategories(): { [key: string]: Array<{title: string, url: string, content: string, explanation: string, confidence: number}> } {
-  return categories;
-}
-
-/**
- * Clear all categories
- */
-export function clearCategories(): void {
-  categories = {};
-}
