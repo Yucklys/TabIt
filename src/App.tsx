@@ -1,27 +1,28 @@
 import { useState } from 'react';
+import { oneTimeGrouping } from './mode/oneTime';
+import { smartGrouping } from './mode/smart';
+import { aggressiveGrouping } from './mode/aggressive';
 
 export default function App() {
   const [customPrompt, setCustomPrompt] = useState('');
   const [mode, setMode] = useState<'one-time' | 'smart' | 'aggressive'>('one-time');
 
   const handleGroup = async () => {
-    const api = await import('./api');
-    
     // Set custom prompt
-    api.setCustomPrompt(customPrompt);
+    setCustomPrompt(customPrompt);
     if (customPrompt) {
       console.log('Custom prompt set:', customPrompt);
     }
     
     switch(mode) {
       case 'one-time':
-        await api.oneTimeGrouping();
+        await oneTimeGrouping();
         break;
       case 'smart':
-        await api.smartGrouping();
+        await smartGrouping();
         break;
       case 'aggressive':
-        await api.aggressiveGrouping();
+        await aggressiveGrouping();
         break;
     }
   };

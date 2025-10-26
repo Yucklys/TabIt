@@ -1,115 +1,23 @@
-interface DownloadProgressEvent extends Event {
-  loaded: number;
-  total: number;
-}
-
-interface AICreateMonitor {
-  addEventListener(type: 'downloadprogress', listener: (event: DownloadProgressEvent) => void): void;
-}
-
-interface SummarizerOptions {
-  monitor?: (monitor: AICreateMonitor) => void;
-}
-
-interface AISummarizer {
-  summarize(text: string, options?: { context?: string; signal?: AbortSignal }): Promise<string>;
-  summarizeStreaming(text: string, options?: { context?: string; signal?: AbortSignal }): ReadableStream<string>;
-  destroy(): void;
-}
-
-interface LanguageModel {
-  prompt(input: string, options?: { signal?: AbortSignal; responseConstraint?: unknown }): Promise<string>;
-  promptStreaming(input: string, options?: { signal?: AbortSignal; responseConstraint?: unknown }): ReadableStream<string>;
-  destroy(): void;
-  clone(): Promise<LanguageModel>;
-  append(input: string): Promise<void>;
-  inputUsage: number;
-  inputQuota: number;
-}
-
-declare global {
-  interface Window {
-    LanguageModel?: {
-      availability(): Promise<'readily' | 'after-download' | 'no'>;
-      create(options?: { signal?: AbortSignal }): Promise<LanguageModel>;
-      params(): Promise<{
-        defaultTemperature: number;
-        maxTemperature: number;
-        defaultTopK: number;
-        maxTopK: number;
-      }>;
-    };
-    Summarizer?: {
-      availability(): Promise<'readily' | 'after-download' | 'no'>;
-      create(options?: SummarizerOptions): Promise<AISummarizer>;
-    };
-  }
-}
-
-// ==================== Prompt API ====================
-
 /**
  * Prompt API - Send natural language requests to Gemini Nano
  * Usage: const result = await prompt("your question here");
  */
 export async function prompt(input: string): Promise<string> {
-  if (!window.LanguageModel) {
-    throw new Error('Prompt API not available - window.LanguageModel not found');
+  const availability = await LanguageModel.availability();
+  if (availability === 'unavailable') {
+    return 'Prompt API is not available';
   }
-
-  const availability = await window.LanguageModel.availability();
-  if (availability === 'no') {
-    throw new Error('Prompt API is unavailable');
-  }
-  
-  if (availability === 'after-download') {
-    throw new Error('Prompt API needs user gesture to download model');
-  }
-
-  const session = await window.LanguageModel.create();
+  const session = await LanguageModel.create({
+    monitor(m) {
+      m.addEventListener('downloadprogress', (e) => {
+        console.log(`Downloaded ${e.loaded * 100}%`);
+      });
+    },
+  });
   const result = await session.prompt(input);
   session.destroy();
   
   return result;
-}
-
-/**
- * Prompt API with streaming
- * Usage: const result = await promptStreaming("your question here");
- * This could let 
- */
-export async function promptStreaming(input: string): Promise<string> {
-  if (!window.LanguageModel) {
-    throw new Error('Prompt API not available - window.LanguageModel not found');
-  }
-
-  const availability = await window.LanguageModel.availability();
-  if (availability === 'no') {
-    throw new Error('Prompt API is unavailable');
-  }
-  
-  if (availability === 'after-download') {
-    throw new Error('Prompt API needs user gesture to download model');
-  }
-
-  const session = await window.LanguageModel.create();
-  const stream = session.promptStreaming(input);
-  
-  let fullResult = '';
-  const reader = stream.getReader();
-  
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      fullResult = value;
-    }
-  } finally {
-    reader.releaseLock();
-  }
-  
-  session.destroy();
-  return fullResult;
 }
 
 // User custom prompt storage

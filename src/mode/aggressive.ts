@@ -1,6 +1,3 @@
-import { categorizeAndGroup } from './categorizeAndGroup';
-import { createGroupFromIndicesWithTabs } from './tabGroups';
-
 /**
  * Aggressive grouping: Let AI have full control, may regroup existing tabs
  * This ungroups all existing tabs first, then re-categorizes everything

@@ -6,7 +6,7 @@ import { getTabInfoList } from './tabs';
  * Core categorization logic shared by all grouping modes
  * Returns categorized tabs with their indices
  */
-export async function categorizeAndGroup(): Promise<{ [category: string]: number[] }> {
+export async function categorizeAndGroup(): Promise<{ [category: string]: [number, ...number[]] }> {
   const startTime = Date.now();
   
   const tabs = await chrome.tabs.query({});
@@ -55,7 +55,7 @@ export async function categorizeAndGroup(): Promise<{ [category: string]: number
   });
   
   // Process results - map local indices to global tab indices
-  const categorizedResult: { [category: string]: number[] } = {};
+  const categorizedResult: { [category: string]: [number, ...number[]] } = {};
   for (const [localIndexStr, data] of Object.entries(batchResult)) {
     const localIndex = parseInt(localIndexStr);
     const tab = validTabInfoList[localIndex];
@@ -64,9 +64,10 @@ export async function categorizeAndGroup(): Promise<{ [category: string]: number
       const finalCategory = mergeSimilarCategories(data.category, data.confidence);
 
       if (!categorizedResult[finalCategory]) {
-        categorizedResult[finalCategory] = [];
+        categorizedResult[finalCategory] = [globalIndex];
+      } else {
+        categorizedResult[finalCategory].push(globalIndex);
       }
-      categorizedResult[finalCategory].push(globalIndex);
     }
   }
   

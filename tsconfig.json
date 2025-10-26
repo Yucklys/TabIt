@@ -5,7 +5,7 @@
     { "path": "./tsconfig.node.json" }
   ],
   "compilerOptions": {
-	"types": ["chrome"],
+	"types": ["chrome", "dom-chromium-ai"],
 	"baseUrl": ".",
 	"paths": {
 	  "@/*": ["./src/*"]

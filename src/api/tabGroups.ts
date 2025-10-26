@@ -1,20 +1,15 @@
-import '../chrome.d.ts';
+import { getTabIdsByIndices } from "./tabs";
 
-export interface TabGroupInfo {
-  id: number;
-  title: string;
-  color: string;
-  collapsed: boolean;
-}
+type TabGroup = chrome.tabGroups.TabGroup;
 
 /**
  * Create a tab group with given tab indices and name
  */
-export async function createTabGroup(tabIds: number[], groupName: string): Promise<TabGroupInfo | null> {
+export async function createTabGroup(indice: [number, ...number[]], groupName: string): Promise<TabGroup | null> {
   try {
     // Validate input
-    if (!tabIds || tabIds.length === 0) {
-      console.error('No tab IDs provided');
+    if (!indice || indice.length === 0) {
+      console.error('No tab index provided');
       return null;
     }
 
@@ -23,29 +18,19 @@ export async function createTabGroup(tabIds: number[], groupName: string): Promi
       return null;
     }
 
-    // Check if chrome.tabGroups exists
-    if (!chrome.tabGroups) {
-      console.error('chrome.tabGroups API not available');
-      return null;
-    }
+    const tabIds = await getTabIdsByIndices(indice);
 
-    // First, group the tabs together using chrome.tabs.group
-    const groupId = await chrome.tabs.group({
-      tabIds: tabIds
-    });
-
-    // Then update the group with title using chrome.tabGroups.update
-    await chrome.tabGroups.update(groupId, {
-      title: groupName.trim()
-    });
+    if (tabIds.length) {
+      const groupId = await chrome.tabs.group({
+        tabIds,
+      });
+      await chrome.tabGroups.update(groupId, {
+        title: groupName.trim()
+      });
     
-    return {
-      id: groupId,
-      title: groupName.trim(),
-      color: 'grey', // Default color
-      collapsed: false
-    };
-
+      return await chrome.tabGroups.get(groupId);
+    }
+    return null;
   } catch (error) {
     console.error('Error creating tab group:', error);
     return null;
@@ -55,8 +40,8 @@ export async function createTabGroup(tabIds: number[], groupName: string): Promi
 /**
  * Create multiple tab groups from categorized tabs
  */
-export async function createTabGroupsFromCategories(categorizedTabs: { [category: string]: number[] }): Promise<TabGroupInfo[]> {
-  const createdGroups: TabGroupInfo[] = [];
+export async function createTabGroupsFromCategories(categorizedTabs: { [category: string]: [number, ...number[]] }): Promise<TabGroup[]> {
+  const createdGroups: TabGroup[] = [];
   
   try {
     for (const [category, tabIndices] of Object.entries(categorizedTabs)) {
@@ -80,15 +65,9 @@ export async function createTabGroupsFromCategories(categorizedTabs: { [category
 /**
  * Get all existing tab groups
  */
-export async function getAllTabGroups(): Promise<TabGroupInfo[]> {
+export async function getAllTabGroups(): Promise<TabGroup[]> {
   try {
-    const groups = await chrome.tabGroups.query({});
-    return groups.map(group => ({
-      id: group.id,
-      title: group.title || 'Untitled',
-      color: group.color || 'grey',
-      collapsed: group.collapsed || false
-    }));
+    return await chrome.tabGroups.query({});
   } catch (error) {
     console.error('Error getting tab groups:', error);
     return [];
@@ -99,60 +78,14 @@ export async function getAllTabGroups(): Promise<TabGroupInfo[]> {
  * Delete a tab group by ID
  */
 export async function deleteTabGroup(groupId: number): Promise<boolean> {
-  try {
-    await chrome.tabGroups.remove(groupId);
-    console.log(`Deleted tab group ${groupId}`);
-    return true;
-  } catch (error) {
-    console.error('Error deleting tab group:', error);
+  const tabsInGroup = await chrome.tabs.query({ groupId });
+  if (tabsInGroup.length == 0) {
     return false;
   }
-}
-
-/**
- * Create tab group from tab indices and group name
- * @param tabIndices Array of tab indices (0, 1, 2, etc.)
- * @param groupName Name for the tab group
- */
-export async function createGroupFromIndices(tabIndices: number[], groupName: string): Promise<TabGroupInfo | null> {
-  try {
-    const allTabs = await chrome.tabs.query({});
-    return await createGroupFromIndicesWithTabs(tabIndices, groupName, allTabs);
-  } catch (error) {
-    console.error('Error creating group from indices:', error);
-    return null;
-  }
-}
-
-/**
- * Create tab group from tab indices and group name with pre-fetched tabs
- * @param tabIndices Array of tab indices (0, 1, 2, etc.)
- * @param groupName Name for the tab group
- * @param allTabs Pre-fetched tabs array
- */
-export async function createGroupFromIndicesWithTabs(tabIndices: number[], groupName: string, allTabs: chrome.tabs.Tab[]): Promise<TabGroupInfo | null> {
-  try {
-    
-    // Convert indices to tab IDs
-    const tabIds: number[] = [];
-    for (const index of tabIndices) {
-      const tab = allTabs.find(t => t.index === index);
-      if (tab?.id) {
-        tabIds.push(tab.id);
-      }
+  tabsInGroup.forEach(tab => {
+    if (tab.id !== undefined) {
+      chrome.tabs.ungroup(tab.id);
     }
-    
-    if (tabIds.length === 0) {
-      return null;
-    }
-    
-    // Create the group
-    return await createTabGroup(tabIds, groupName);
-    
-  } catch (error) {
-    console.error('Error creating group from indices:', error);
-    return null;
-  }
+  });
+  return true;
 }
-
-
