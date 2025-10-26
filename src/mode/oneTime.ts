@@ -1,5 +1,6 @@
 import { categorizeAndGroup } from '@/api/categorizeAndGroup';
 import { createTabGroupsFromCategories } from '@/api/tabGroups';
+import { getUngroupedTabs } from '@/api/tabs';
 
 /**
  * One-time grouping: Categorize tabs and create tab groups automatically
@@ -7,7 +8,8 @@ import { createTabGroupsFromCategories } from '@/api/tabGroups';
  */
 export async function oneTimeGrouping(): Promise<void> {
   try {
-    const categorizedResult = await categorizeAndGroup();
+    const tabs = await getUngroupedTabs();
+    const categorizedResult = await categorizeAndGroup(tabs);
 
     const tabGroups = await createTabGroupsFromCategories(categorizedResult);
 

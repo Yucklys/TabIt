@@ -1,3 +1,4 @@
+import { getUngroupedTabs } from '@/api/tabs';
 import { categorizeAndGroup } from '../api/categorizeAndGroup';
 import { createTabGroupsFromCategories, getAllTabGroups } from '../api/tabGroups';
 
@@ -9,12 +10,13 @@ import { createTabGroupsFromCategories, getAllTabGroups } from '../api/tabGroups
  */
 export async function smartGrouping(): Promise<void> {
   try {
+    const tabs = await getUngroupedTabs();
     const existingGroups = await getAllTabGroups();
     const existingGroupNames = existingGroups.map(g => g.title ?? "");
     
     console.log('Existing groups:', existingGroupNames);
     
-    const categorizedResult = await categorizeAndGroup();
+    const categorizedResult = await categorizeAndGroup(tabs);
 
     const tabGroups = await createTabGroupsFromCategories(categorizedResult);
     

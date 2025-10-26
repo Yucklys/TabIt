@@ -53,9 +53,7 @@ export async function createTabGroupsFromCategories(categorizedTabs: { [category
       }
     }
     
-    console.log(`Created ${createdGroups.length} tab groups`);
     return createdGroups;
-    
   } catch (error) {
     console.error('Error creating tab groups from categories:', error);
     return createdGroups;

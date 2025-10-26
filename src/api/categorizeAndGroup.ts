@@ -2,14 +2,15 @@ import { categorizeTabsBatch } from './ai';
 import { mergeSimilarCategories, clearGlobalCategories } from './merger';
 import { getTabInfoList } from './tabs';
 
+type Tab = chrome.tabs.Tab;
+
 /**
  * Core categorization logic shared by all grouping modes
  * Returns categorized tabs with their indices
  */
-export async function categorizeAndGroup(): Promise<{ [category: string]: [number, ...number[]] }> {
+export async function categorizeAndGroup(tabs: Tab[]): Promise<{ [category: string]: [number, ...number[]] }> {
   const startTime = Date.now();
   
-  const tabs = await chrome.tabs.query({});
   const allTabInfoList = getTabInfoList(tabs);
   
   // Filter out invalid tabs (chrome://, chrome-extension://)
@@ -19,7 +20,6 @@ export async function categorizeAndGroup(): Promise<{ [category: string]: [numbe
   
   clearGlobalCategories();
 
-  // Display ALL tabs (including invalid) for reference
   allTabInfoList.forEach((tab) => {
     const isValid = tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://');
     if (isValid) {
@@ -29,34 +29,10 @@ export async function categorizeAndGroup(): Promise<{ [category: string]: [numbe
     }
   });
 
-  // Split tabs into smaller batches for faster processing
-  const batchSize = 10;
-  const batches: Array<Array<{index: number, title: string, url: string}>> = [];
+  const categorizedTabs = await categorizeTabsBatch(validTabInfoList);
   
-  for (let i = 0; i < validTabInfoList.length; i += batchSize) {
-    batches.push(validTabInfoList.slice(i, i + batchSize));
-  }
-  
-  // Process all batches in parallel using Promise.all
-  const batchPromises = batches.map(async (batch) => {
-    return await categorizeTabsBatch(batch);
-  });
-  
-  const batchResults = await Promise.all(batchPromises);
-  
-  // Merge all batch results
-  const batchResult: { [index: number]: {category: string, confidence: number} } = {};
-  let globalIndex = 0;
-  batchResults.forEach((result) => {
-    for (const [, data] of Object.entries(result)) {
-      batchResult[globalIndex] = data;
-      globalIndex++;
-    }
-  });
-  
-  // Process results - map local indices to global tab indices
   const categorizedResult: { [category: string]: [number, ...number[]] } = {};
-  for (const [localIndexStr, data] of Object.entries(batchResult)) {
+  for (const [localIndexStr, data] of Object.entries(categorizedTabs)) {
     const localIndex = parseInt(localIndexStr);
     const tab = validTabInfoList[localIndex];
     if (tab) {

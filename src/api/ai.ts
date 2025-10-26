@@ -1,3 +1,18 @@
+let globalSession: LanguageModel | null = null;
+
+export async function initSession() {
+  if (!globalSession) {
+    globalSession = await LanguageModel.create({
+      monitor(m) {
+        m.addEventListener('downloadprogress', (e) => {
+          console.log(`Downloaded ${e.loaded * 100}%`);
+        });
+      },
+    });
+  }
+  return globalSession;
+}
+
 /**
  * Prompt API - Send natural language requests to Gemini Nano
  * Usage: const result = await prompt("your question here");
@@ -7,15 +22,8 @@ export async function prompt(input: string): Promise<string> {
   if (availability === 'unavailable') {
     return 'Prompt API is not available';
   }
-  const session = await LanguageModel.create({
-    monitor(m) {
-      m.addEventListener('downloadprogress', (e) => {
-        console.log(`Downloaded ${e.loaded * 100}%`);
-      });
-    },
-  });
+  const session = await initSession();
   const result = await session.prompt(input);
-  session.destroy();
   
   return result;
 }
