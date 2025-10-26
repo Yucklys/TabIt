@@ -1,3 +1,5 @@
+import path from 'node:path'
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
@@ -6,18 +8,11 @@ import { viteStaticCopy } from 'vite-plugin-static-copy'
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     viteStaticCopy({
       targets: [
         {
           src: 'public/manifest.json',
-          dest: '.',
-        },
-        {
-          src: 'public/background.js',
-          dest: '.',
-        },
-        {
-          src: 'public/content.js',
           dest: '.',
         }
       ],
@@ -30,5 +25,10 @@ export default defineConfig({
         main: './index.html',
       }
     }
-  }
+  },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, './src'),
+    },
+  },
 })

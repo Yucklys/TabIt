@@ -67,8 +67,7 @@ export async function prompt(input: string): Promise<string> {
   }
 
   const session = await window.LanguageModel.create();
-  // @ts-expect-error - outputLanguage is a new API feature not yet in types
-  const result = await session.prompt(input, { outputLanguage: 'en' });
+  const result = await session.prompt(input);
   session.destroy();
   
   return result;
@@ -94,8 +93,7 @@ export async function promptStreaming(input: string): Promise<string> {
   }
 
   const session = await window.LanguageModel.create();
-  // @ts-expect-error - outputLanguage is a new API feature not yet in types
-  const stream = session.promptStreaming(input, { outputLanguage: 'en' });
+  const stream = session.promptStreaming(input);
   
   let fullResult = '';
   const reader = stream.getReader();

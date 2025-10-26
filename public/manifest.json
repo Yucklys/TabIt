@@ -8,6 +8,13 @@
     "default_title": "Tab Sense - AI Tab Manager"
   },
   "permissions": [
-    "storage"
+	"tabs",
+	"tabGroups",
+	"scripting",
+	"storage"
+  ],
+  "host_permissions": [
+	"http://*/*",
+	"https://*/*"
   ]
 }
