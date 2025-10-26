@@ -119,7 +119,7 @@ let categories: { [key: string]: Array<{title: string, url: string, content: str
  * Usage: const category = await categorizeTab(title, url, content);
  */
 export async function categorizeTab(title: string, url: string): Promise<string> {
-  const promptText = `Analyze this browser tab and create a meaningful category name based on its URL and title.
+  const promptText = `You are a browser tab manager. Analyze the URL and title to create a meaningful category name. NEVER use "Uncategorized" or "Other".
 
 Rules:
 1. Create a category name that describes the tab's purpose
@@ -140,17 +140,11 @@ Page URL: ${url}`;
 export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<{ [index: number]: {category: string, confidence: number} }> {
   const tabsInfo = tabs.map((tab, localIndex) => `${localIndex}: ${tab.title}`).join('\n');
   
-  const promptText = `Analyze these browser tabs and group them by common themes. Create BROAD, SIMPLE category names.
+  const promptText = `Categorize these tabs. Use categories: Development, Entertainment, AI Tools, Communication, Local Development, News, Shopping, Education, Business, Technology.
 
-Rules:
-1. Use SHORT, GENERAL category names (1-2 words max)
-2. Group similar tabs together under the same category
-3. Examples: "Development", "Entertainment", "AI Tools", "Communication", "Personality"
-4. Avoid specific details in category names
+Return JSON with local index as key: {"0": {"category": "Development", "confidence": 0.9}}
 
-Return JSON format: {"0": {"category": "SimpleName", "confidence": 0.9}}
-
-Tabs to analyze:
+Tabs:
 ${tabsInfo}`;
 
   const response = await prompt(promptText);

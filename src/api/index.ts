@@ -1,12 +1,15 @@
 // Export all categorization strategies
 export { categorizeAllTabsBatch, categorizeAllTabsHybrid, categorizeAllTabsParallel } from './strategies';
-export { categorizeSingleTab, type CategorizedTab, type CategoryResult } from './categorizer';
+export { type CategorizedTab } from './categorizer';
 
 // Export AI functions
 export { categorizeTab, categorizeTabsBatch, checkExistingCategories, getCategories, clearCategories } from './ai';
 
 // Export tab utilities
 export { getUngroupedTabs, getTabInfoList, type TabInfo } from './tabs';
+
+// Export merger functions
+export { mergeSimilarCategories, clearGlobalCategories } from './merger';
 
 // Smart categorization method with fixed batch count
 import { categorizeAllTabsHybrid } from './strategies';
