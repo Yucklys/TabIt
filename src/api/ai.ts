@@ -147,7 +147,7 @@ Page URL: ${url}`;
  * Batch categorize multiple tabs at once
  */
 export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<{ [index: number]: {category: string, confidence: number} }> {
-  const tabsInfo = tabs.map(tab => `Tab ${tab.index}: "${tab.title}" - ${tab.url}`).join('\n');
+  const tabsInfo = tabs.map((tab, localIndex) => `Tab ${localIndex}: "${tab.title}" - ${tab.url}`).join('\n');
   
   const promptText = `You are a browser tab manager. Categorize these tabs into meaningful categories. NEVER use "Uncategorized" or "Other".
 
@@ -163,7 +163,7 @@ Use these main categories when appropriate:
 - Business (productivity tools, work, finance)
 - Technology (tech news, gadgets, software reviews)
 
-Return a JSON object with tab index as key and object with category and confidence as value:
+Return a JSON object with LOCAL INDEX (0, 1, 2, etc.) as key and object with category and confidence as value:
 {"0": {"category": "Development", "confidence": 0.9}, "1": {"category": "Entertainment", "confidence": 0.8}}
 
 Tabs:
@@ -193,9 +193,9 @@ ${tabsInfo}`;
     console.error('Failed to parse AI response as JSON:', response);
     console.error('Parse error:', error);
     
-    // Fallback: assign "General" to all tabs
+    // Fallback: assign "General" to all tabs using local indices
     const fallback: { [index: number]: {category: string, confidence: number} } = {};
-    tabs.forEach(tab => fallback[tab.index] = {category: 'General', confidence: 0.5});
+    tabs.forEach((_, localIndex) => fallback[localIndex] = {category: 'General', confidence: 0.5});
     return fallback;
   }
 }

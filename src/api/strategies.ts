@@ -57,6 +57,7 @@ export async function categorizeAllTabsBatch(): Promise<void> {
  */
 export async function categorizeAllTabsHybrid(batchCount: number = 5): Promise<void> {
   try {
+    const startTime = Date.now();
     const tabs = await getUngroupedTabs();
     const tabInfoList = getTabInfoList(tabs);
     
@@ -75,6 +76,8 @@ export async function categorizeAllTabsHybrid(batchCount: number = 5): Promise<v
     for (let i = 0; i < tabInfoList.length; i += batchSize) {
       batches.push(tabInfoList.slice(i, i + batchSize));
     }
+    
+    console.log(`Running categorization with ${batches.length} batches...`);
     
     // Process each batch in parallel using Promise.all
     const batchPromises = batches.map(async (batch, batchIndex) => {
@@ -118,6 +121,10 @@ export async function categorizeAllTabsHybrid(batchCount: number = 5): Promise<v
     
     console.log('\nFinal Result:');
     console.log(finalResult);
+    
+    const endTime = Date.now();
+    const runTime = (endTime - startTime) / 1000;
+    console.log(`\nCompleted in ${runTime.toFixed(2)}s`);
     
   } catch (error) {
     console.error('Error categorizing tabs:', error);
