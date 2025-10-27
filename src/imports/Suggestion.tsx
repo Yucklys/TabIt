@@ -372,41 +372,72 @@ function Group2() {
   );
 }
 
-function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize }: { 
+function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categorizedResult }: { 
   selectedMode: string; 
   onModeChange: (mode: string) => void;
   onConfirm: () => void;
   onCustomize: () => void;
+  categorizedResult: { [category: string]: [number, ...number[]] };
 }) {
   const handleGroupAction = (groupId: number, action: string) => {
     console.log(`Group ${groupId}: ${action}`);
   };
 
+  const categories = Object.keys(categorizedResult);
+  const colors = ['#ff4f4f', '#ffab04', '#0486ff', '#03b151', '#9b59b6', '#e67e22'];
+
   return (
     <div className="h-[589px] overflow-clip relative shrink-0 w-[420px]" data-name="Free_form">
       <Frame />
       <Paragraph1 />
-      <Container1 
-        onRename={() => handleGroupAction(1, "rename")}
-        onChangeColor={() => handleGroupAction(1, "change color")}
-        onUngroup={() => handleGroupAction(1, "ungroup")}
-      />
-      <Container3 
-        onRename={() => handleGroupAction(2, "rename")}
-        onChangeColor={() => handleGroupAction(2, "change color")}
-        onUngroup={() => handleGroupAction(2, "ungroup")}
-      />
-      <Card2 
-        onRename={() => handleGroupAction(3, "rename")}
-        onChangeColor={() => handleGroupAction(3, "change color")}
-        onUngroup={() => handleGroupAction(3, "ungroup")}
-      />
+      
+      {/* Dynamic group rendering */}
+      {categories.length > 0 ? (
+        categories.map((category, index) => {
+          const tabCount = categorizedResult[category].length;
+          const topPosition = 147 + (index * 76); // Space groups vertically
+          const color = colors[index % colors.length];
+          
+          return (
+            <div key={category} className="absolute" style={{ top: `${topPosition}px`, left: '33px', width: '354px' }}>
+              <div className="absolute bg-white box-border content-stretch flex flex-col h-[58px] items-center left-0 pb-[0.8px] pl-[12.8px] pr-[0.8px] pt-[12.8px] rounded-[14px] top-0 w-[354px]">
+                <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[14px]" />
+                <div className="absolute content-stretch flex flex-col gap-[2px] h-[22px] items-start left-[35.2px] top-[19px] w-[305px]">
+                  <div className="h-[20px] relative w-full flex items-center justify-between pr-[30px]">
+                    <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
+                      Group {index + 1}: {category}
+                    </p>
+                    <GroupDropdown 
+                      groupId={index + 1}
+                      onRename={() => handleGroupAction(index + 1, "rename")}
+                      onChangeColor={() => handleGroupAction(index + 1, "change color")}
+                      onUngroup={() => handleGroupAction(index + 1, "ungroup")}
+                      className=""
+                    />
+                  </div>
+                </div>
+              </div>
+              {/* Color indicator with tab count */}
+              <div 
+                className="absolute rounded-[6px] left-[12px] top-[19px] w-[20px] h-[20px] flex items-center justify-center"
+                style={{ backgroundColor: color }}
+              >
+                <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
+                <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[12px] text-center text-white z-10">
+                  {tabCount}
+                </p>
+              </div>
+            </div>
+          );
+        })
+      ) : (
+        <div className="absolute left-[33px] top-[147px] w-[354px] text-center text-[#717182] text-[14px]">
+          No groups found
+        </div>
+      )}
+      
       <Container5 />
       <Container6 />
-      <Card3 />
-      <p className="absolute font-['Arial:Regular',_sans-serif] leading-[20px] left-[56px] not-italic text-[12px] text-white top-[167px] w-[6px]">5</p>
-      <Card4 />
-      <Card5 />
       <GroupingMode onClick={onConfirm} />
       <GroupingMode1 onClick={onCustomize} />
       <Group2 />
@@ -423,12 +454,14 @@ export default function Suggestion({
   selectedMode = "smart", 
   onModeChange, 
   onConfirm, 
-  onCustomize 
+  onCustomize,
+  categorizedResult = {}
 }: { 
   selectedMode?: string; 
   onModeChange?: (mode: string) => void;
   onConfirm?: () => void;
   onCustomize?: () => void;
+  categorizedResult?: { [category: string]: [number, ...number[]] };
 }) {
   const handleConfirm = () => {
     console.log("Confirm Grouping clicked");
@@ -451,6 +484,7 @@ export default function Suggestion({
         onModeChange={onModeChange || (() => {})}
         onConfirm={handleConfirm}
         onCustomize={handleCustomize}
+        categorizedResult={categorizedResult}
       />
     </div>
   );

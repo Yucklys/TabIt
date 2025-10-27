@@ -16,17 +16,24 @@ import { aggressiveGrouping } from "./mode/aggressive";
 import { createTabGroupsFromCategories } from "./api/tabGroups";
 
 export default function App() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [startup, setStartup] = useState(false);
+  const [currentStep, setCurrentStep] = useState(7); // Default to 7, will be set to 1 if startup event occurs
   const [loadingFrame, setLoadingFrame] = useState(1);
   const [selectedMode, setSelectedMode] = useState("smart");
   const [customPrompt, setCustomPrompt] = useState("");
   const [customGroups, setCustomGroups] = useState<string[]>([]);
   const [categorizedResult, setCategorizedResult] = useState<{ [category: string]: [number, ...number[]] } | null>(null);
 
-  // Load user settings on mount
+  // Check for startup event and load user settings on mount
   useEffect(() => {
-    const loadSettings = async () => {
+    const checkStartupAndLoadSettings = async () => {
       try {
+        // Listen for startup event
+        chrome.runtime.onStartup.addListener(() => {
+          setStartup(true);
+          setCurrentStep(1);
+        });
+
         const settings = await getUserSettings();
         setSelectedMode(settings.selectedMode || "smart");
         setCustomPrompt(settings.customPrompt || "");
@@ -35,7 +42,7 @@ export default function App() {
         console.error("Failed to load user settings:", error);
       }
     };
-    loadSettings();
+    checkStartupAndLoadSettings();
   }, []);
 
   // Listen for categorization completion in session storage
@@ -160,8 +167,8 @@ export default function App() {
       {currentStep === 4 && loadingFrame === 1 && <GeneratingGroupsFrame1 selectedMode={selectedMode} onModeChange={handleModeChange} />}
       {currentStep === 4 && loadingFrame === 2 && <GeneratingGroupsFrame2 selectedMode={selectedMode} onModeChange={handleModeChange} />}
       {currentStep === 5 && <GeneratingGroupsComplete onNext={handleViewResults} selectedMode={selectedMode} onModeChange={handleModeChange} />}
-      {currentStep === 6 && <Suggestion selectedMode={selectedMode} onModeChange={handleModeChange} onConfirm={handleConfirmGrouping} onCustomize={handleCustomize} />}
-      {currentStep === 7 && <SuggestionFinal selectedMode={selectedMode} onModeChange={handleModeChange} onCustomize={handleCustomize} />}
+      {currentStep === 6 && <Suggestion selectedMode={selectedMode} onModeChange={handleModeChange} onConfirm={handleConfirmGrouping} onCustomize={handleCustomize} categorizedResult={categorizedResult || {}} />}
+      {currentStep === 7 && <SuggestionFinal selectedMode={selectedMode} onModeChange={handleModeChange} onCustomize={handleCustomize} categorizedResult={categorizedResult || {}} />}
       {currentStep === 8 && <CustomizeInteractive selectedMode={selectedMode} onModeChange={handleModeChange} onNext={handleCustomizeComplete} />}
     </LayoutGroup>
   );

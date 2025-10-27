@@ -102,7 +102,7 @@ function Loading() {
 function GroupingMode() {
   return (
     <div className="absolute bg-[rgba(236,236,240,0.5)] h-[49px] left-[33px] rounded-[200px] top-[514px] w-[354px]" data-name="Grouping Mode">
-      <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.28)] border-solid inset-0 pointer-events-none rounded-[6px]" />
+      <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.28)] border-solid inset-0 pointer-events-none rounded-[200px]" />
       <p className="absolute font-['Arial:Regular',_sans-serif] leading-[20px] left-[calc(50%-48px)] not-italic text-[14px] text-neutral-950 text-nowrap top-[14px] whitespace-pre">Get Started!</p>
     </div>
   );
@@ -153,7 +153,7 @@ function Card5() {
 function Card6() {
   return (
     <div className="absolute bg-[#0486ff] h-[10.949px] left-[36.3px] rounded-[1.932px] top-[23px] w-[9.017px]" data-name="Card">
-      <div aria-hidden="true" className="absolute border-[0.258px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
+      <div aria-hidden="true" className="absolute border-[0.258px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[1.932px]" />
     </div>
   );
 }
