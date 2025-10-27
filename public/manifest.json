@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Tab Sense",
+  "name": "TabIt",
   "version": "1.0.0",
   "description": "AI Powered Tab Manager for Chrome",
   "action": {
     "default_popup": "index.html",
-    "default_title": "Tab Sense - AI Tab Manager"
+    "default_title": "TabIt - AI Tab Manager"
   },
   "permissions": [
 	"tabs",
