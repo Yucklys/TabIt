@@ -1,5 +1,4 @@
 import { categorizeTabsBatch } from './ai';
-import { mergeSimilarCategories, clearGlobalCategories } from './merger';
 import { getTabInfoList } from './tabs';
 
 type Tab = chrome.tabs.Tab;
@@ -17,8 +16,6 @@ export async function categorizeAndGroup(tabs: Tab[]): Promise<{ [category: stri
   const validTabInfoList = allTabInfoList.filter(tab =>
     tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')
   );
-  
-  clearGlobalCategories();
 
   allTabInfoList.forEach((tab) => {
     const isValid = tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://');
@@ -32,18 +29,11 @@ export async function categorizeAndGroup(tabs: Tab[]): Promise<{ [category: stri
   const categorizedTabs = await categorizeTabsBatch(validTabInfoList);
   
   const categorizedResult: { [category: string]: [number, ...number[]] } = {};
-  for (const [localIndexStr, data] of Object.entries(categorizedTabs)) {
-    const localIndex = parseInt(localIndexStr);
-    const tab = validTabInfoList[localIndex];
-    if (tab) {
-      const globalIndex = tab.index;
-      const finalCategory = mergeSimilarCategories(data.category, data.confidence);
-
-      if (!categorizedResult[finalCategory]) {
-        categorizedResult[finalCategory] = [globalIndex];
-      } else {
-        categorizedResult[finalCategory].push(globalIndex);
-      }
+  for (const group of categorizedTabs) {
+    if (!categorizedResult[group.CategoryName]) {
+      categorizedResult[group.CategoryName] = group.indices;
+    } else {
+      categorizedResult[group.CategoryName].push(...group.indices);
     }
   }
   

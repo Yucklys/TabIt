@@ -47,8 +47,8 @@ export function clearCustomPrompt(): void {
 /**
  * Batch categorize multiple tabs at once
  */
-export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<{ [index: number]: {category: string, confidence: number} }> {
-  const tabsInfo = tabs.map((tab, localIndex) => `${localIndex}: ${tab.title} (${tab.url})`).join('\n');
+export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<Array<{CategoryName: string, indices: [number, ...number[]]}>> {
+  const tabsInfo = tabs.map((tab) => `${tab.index}: ${tab.title} (${tab.url})`).join('\n');
   
   // Log custom prompt usage
   if (customPrompt) {
@@ -59,13 +59,10 @@ export async function categorizeTabsBatch(tabs: Array<{index: number, title: str
   const promptText = `${customPrompt ? `CRITICAL: Follow this instruction exactly: ${customPrompt}
 
 ` : ''}Analyze these browser tabs and group them.
-
-Rules:
-1. Group tabs from the SAME website together
-2. Use category names as specified
-3. Apply any custom grouping instructions provided
-
-Return JSON format: {"0": {"category": "CategoryName", "confidence": 0.9}}
+The CategoryName should in one or two words.
+The indices are the index of the tabs, each tab is mapped to only one category.
+A category should have at least one tab in it.
+Return JSON format: [{"CategoryName": "Development", "indices": [0, 1, 3]}, {"CategoryName": "Entertainment", "indices": [2, 4]}]
 
 Tabs:
 ${tabsInfo}`;
@@ -83,21 +80,14 @@ ${tabsInfo}`;
       jsonStr = jsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
     
-    // Find JSON object in the response
-    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[0];
-    }
-    
     return JSON.parse(jsonStr);
   } catch (error) {
     console.error('Failed to parse AI response as JSON:', response);
     console.error('Parse error:', error);
     
-    // Fallback: assign "General" to all tabs using local indices
-    const fallback: { [index: number]: {category: string, confidence: number} } = {};
-    tabs.forEach((_, localIndex) => fallback[localIndex] = {category: 'General', confidence: 0.5});
-    return fallback;
+    // Fallback: assign "General" to all tabs using actual indices
+    const allIndices = tabs.map(tab => tab.index);
+    return [{CategoryName: 'General', indices: allIndices as [number, ...number[]]}];
   }
 }
 
