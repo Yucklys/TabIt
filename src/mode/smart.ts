@@ -1,12 +1,11 @@
 import { getUngroupedTabs } from '@/api/tabs';
 import { categorizeAndGroup } from '../api/categorizeAndGroup';
-import { createTabGroupsFromCategories, getAllTabGroups } from '../api/tabGroups';
+import { getAllTabGroups } from '../api/tabGroups';
 
 /**
- * Smart grouping: Only group tabs if their category matches existing groups
+ * Smart grouping: Categorize tabs and save result to session storage
+ * Only group tabs if their category matches existing groups
  * Does not modify or delete existing groups
- * E.g., User creates [Sports, News, Entertainment] groups
- * AI will only create groups that match these categories
  */
 export async function smartGrouping(): Promise<void> {
   try {
@@ -16,13 +15,32 @@ export async function smartGrouping(): Promise<void> {
     
     console.log('Existing groups:', existingGroupNames);
     
+    // Check if there are any tabs to process
+    if (!tabs || tabs.length === 0) {
+      await chrome.storage.session.set({ 
+        categorizedResult: {},
+        categorizationStatus: 'no-tabs',
+        message: 'No ungrouped tabs found to categorize'
+      });
+      console.log('No ungrouped tabs found for smart mode');
+      return;
+    }
+    
     const categorizedResult = await categorizeAndGroup(tabs);
 
-    const tabGroups = await createTabGroupsFromCategories(categorizedResult);
+    // Save result to session storage for UI to pick up
+    await chrome.storage.session.set({ 
+      categorizedResult: categorizedResult,
+      categorizationStatus: 'completed'
+    });
     
-    console.log(`Created ${tabGroups.length} tab groups (smart mode)`);
+    console.log(`Smart mode categorization completed`);
   } catch (error) {
     console.error('Error in smart grouping:', error);
+    await chrome.storage.session.set({ 
+      categorizationStatus: 'error',
+      categorizationError: error.message
+    });
     throw error;
   }
 }

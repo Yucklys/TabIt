@@ -1,3 +1,5 @@
+import { getCustomPrompt, getCustomGroups } from './storage';
+
 let globalSession: LanguageModel | null = null;
 
 export async function initSession() {
@@ -28,38 +30,24 @@ export async function prompt(input: string): Promise<string> {
   return result;
 }
 
-// User custom prompt storage
-let customPrompt: string = '';
-
-export function setCustomPrompt(prompt: string): void {
-  customPrompt = prompt;
-  console.log('AI.ts: Custom prompt stored:', prompt || '(empty)');
-}
-
-export function getCustomPrompt(): string {
-  return customPrompt;
-}
-
-export function clearCustomPrompt(): void {
-  customPrompt = '';
-}
-
 /**
  * Batch categorize multiple tabs at once
  */
 export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<Array<{CategoryName: string, indices: [number, ...number[]]}>> {
   const tabsInfo = tabs.map((tab) => `${tab.index}: ${tab.title} (${tab.url})`).join('\n');
   
+  const customPrompt = await getCustomPrompt();
+  const customGroups = await getCustomGroups();
+  
   // Log custom prompt usage
   if (customPrompt) {
     console.log('Using custom prompt:', customPrompt);
   }
   
-  
   const promptText = `${customPrompt ? `CRITICAL: Follow this instruction exactly: ${customPrompt}
 
 ` : ''}Analyze these browser tabs and group them.
-The CategoryName should in one or two words.
+The CategoryName should in one or two words. ${customGroups.length > 0 ? `You should prioritize these names: ${customGroups.join(', ')}, but you can come up with one yourself if needed.` : ''}
 The indices are the index of the tabs, each tab is mapped to only one category.
 A category should have at least one tab in it.
 Return JSON format: [{"CategoryName": "Development", "indices": [0, 1, 3]}, {"CategoryName": "Entertainment", "indices": [2, 4]}]

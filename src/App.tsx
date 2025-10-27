@@ -9,23 +9,95 @@ import GeneratingGroupsComplete from "./imports/GeneratingGroups-4-3179";
 import Suggestion from "./imports/Suggestion";
 import SuggestionFinal from "./imports/Suggestion-5-98-interactive";
 import CustomizeInteractive from "./components/CustomizeInteractive";
+import { getUserSettings, saveUserSettings } from "./api/storage";
+import { oneTimeGrouping } from "./mode/oneTime";
+import { smartGrouping } from "./mode/smart";
+import { aggressiveGrouping } from "./mode/aggressive";
+import { createTabGroupsFromCategories } from "./api/tabGroups";
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(1);
   const [loadingFrame, setLoadingFrame] = useState(1);
   const [selectedMode, setSelectedMode] = useState("smart");
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [customGroups, setCustomGroups] = useState<string[]>([]);
+  const [categorizedResult, setCategorizedResult] = useState<{ [category: string]: [number, ...number[]] } | null>(null);
+
+  // Load user settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await getUserSettings();
+        setSelectedMode(settings.selectedMode || "smart");
+        setCustomPrompt(settings.customPrompt || "");
+        setCustomGroups(settings.customGroups || []);
+      } catch (error) {
+        console.error("Failed to load user settings:", error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  // Listen for categorization completion in session storage
+  useEffect(() => {
+    const handleStorageChange = (changes: any, area: string) => {
+      if (area === 'session' && changes.categorizationStatus) {
+        const status = changes.categorizationStatus.newValue;
+        
+        if ((status === 'completed' || status === 'no-tabs') && changes.categorizedResult) {
+          setCategorizedResult(changes.categorizedResult.newValue);
+          setCurrentStep(5); // Jump to suggestion step
+        } else if (status === 'error') {
+          console.error('Categorization failed:', changes.categorizationError?.newValue);
+          // Handle error state
+        }
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+  }, []);
 
   const handleNextStep = () => {
     setCurrentStep((prev) => prev + 1);
   };
 
-  const handleStep3Complete = () => {
+  const startAIGrouping = async () => {
+    console.log("Starting AI categorization...");
+    
+    // Save current settings
+    await saveUserSettings({
+      selectedMode: selectedMode as 'one-time' | 'smart' | 'aggressive',
+      customPrompt,
+      customGroups
+    });
+    
+    setCurrentStep(4);
+    setLoadingFrame(1);
+      
+    // Clear previous results and start categorization
+    await chrome.storage.session.set({ categorizationStatus: 'processing' });
+      
+    try {
+      // Execute the appropriate categorization function
+      switch(selectedMode) {
+        case 'one-time':
+          await oneTimeGrouping();
+          break;
+        case 'smart':
+          await smartGrouping();
+          break;
+        case 'aggressive':
+          await aggressiveGrouping();
+          break;
+      }
+    } catch (error) {
+      console.error("Error during categorization:", error);
+    }
+  };
+
+  const handleStep3Complete = async () => {
     console.log("Step 3 completed, showing loading animation...");
-    // 800ms delay before showing loading animation (as per Figma interaction settings)
-    setTimeout(() => {
-      setCurrentStep(4);
-      setLoadingFrame(1);
-    }, 800);
+    await startAIGrouping();
   };
 
   const handleViewResults = () => {
@@ -33,13 +105,24 @@ export default function App() {
     setCurrentStep(6);
   };
 
-  const handleModeChange = (mode: string) => {
+  const handleModeChange = async (mode: string) => {
     setSelectedMode(mode);
+    await saveUserSettings({ selectedMode: mode as 'one-time' | 'smart' | 'aggressive' });
   };
 
-  const handleConfirmGrouping = () => {
-    console.log("Confirm Grouping clicked, showing final suggestion page");
-    setCurrentStep(7);
+  const handleConfirmGrouping = async () => {
+    console.log("Confirm Grouping clicked, creating tab groups...");
+    
+    if (categorizedResult) {
+      try {
+        await createTabGroupsFromCategories(categorizedResult);
+        console.log("Tab groups created successfully");
+        setCurrentStep(7);
+      } catch (error) {
+        console.error("Error creating tab groups:", error);
+        // Handle error state
+      }
+    }
   };
 
   const handleCustomize = () => {
@@ -47,15 +130,12 @@ export default function App() {
     setCurrentStep(8);
   };
 
-  const handleCustomizeComplete = () => {
-    console.log("Customize completed, showing loading animation...");
-    setTimeout(() => {
-      setCurrentStep(4);
-      setLoadingFrame(1);
-    }, 800);
+  const handleCustomizeComplete = async () => {
+    console.log("Customize completed, starting AI categorization...");
+    await startAIGrouping();
   };
 
-  // Animate through loading frames with 300ms delays
+  // Animate through loading frames with 300ms delays (but stay in step 4 until AI completes)
   useEffect(() => {
     if (currentStep === 4) {
       if (loadingFrame === 1) {
@@ -65,7 +145,7 @@ export default function App() {
         return () => clearTimeout(timer);
       } else if (loadingFrame === 2) {
         const timer = setTimeout(() => {
-          setCurrentStep(5); // Show complete screen
+          setLoadingFrame(1); // Loop back to frame 1 to keep animating
         }, 300);
         return () => clearTimeout(timer);
       }
