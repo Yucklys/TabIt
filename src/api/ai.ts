@@ -42,6 +42,7 @@ export async function categorizeTabsBatch(tabs: Array<{index: number, title: str
   // Log custom prompt usage
   if (customPrompt) {
     console.log('Using custom prompt:', customPrompt);
+    
   }
   
   const promptText = `${customPrompt ? `CRITICAL: Follow this instruction exactly: ${customPrompt}
@@ -54,6 +55,8 @@ Return JSON format: [{"CategoryName": "Development", "indices": [0, 1, 3]}, {"Ca
 
 Tabs:
 ${tabsInfo}`;
+
+  console.log('Using custom prompt:', customPrompt);
 
   const response = await prompt(promptText);
   

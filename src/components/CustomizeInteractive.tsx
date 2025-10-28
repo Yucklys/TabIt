@@ -3,6 +3,7 @@ import svgPaths from "../imports/svg-8cbxbja4km";
 import { ModeDropdown } from "./ModeDropdown";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Slider } from "./ui/slider";
+import { setCustomPrompt, setCustomGroups } from "../api/storage";
 
 interface Tag {
   id: string;
@@ -37,6 +38,64 @@ export default function CustomizeInteractive({
   const [additionalRules, setAdditionalRules] = useState("");
   const [selectionOrder, setSelectionOrder] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load saved settings from storage on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        // Import storage functions
+        const storage = await import('../api/storage');
+        const getCustomPrompt = storage.getCustomPrompt;
+        const getCustomGroups = storage.getCustomGroups;
+        
+        // Load saved data
+        const savedPrompt = await getCustomPrompt();
+        const savedGroups = await getCustomGroups();
+        
+        console.log('Loaded from storage:');
+        console.log('- Saved prompt:', savedPrompt);
+        console.log('- Saved groups:', savedGroups);
+        
+        // Set additional rules
+        if (savedPrompt) {
+          setAdditionalRules(savedPrompt);
+        }
+        
+        // Set active tags based on saved groups
+        if (savedGroups && savedGroups.length > 0) {
+          setTags(prevTags => {
+            // First, update existing tags
+            const updatedTags = prevTags.map(tag => ({
+              ...tag,
+              active: savedGroups.includes(tag.label)
+            }));
+            
+            // Find new groups that don't exist in default tags
+            const existingLabels = prevTags.map(t => t.label);
+            const newGroups = savedGroups.filter(label => !existingLabels.includes(label));
+            
+            // Add new groups
+            const newTags = newGroups.map((groupLabel, index) => ({
+              id: `tag-${Date.now()}-${index}`,
+              label: groupLabel,
+              active: true,
+            }));
+            
+            // Add new tags to selection order
+            if (newTags.length > 0) {
+              setSelectionOrder(prev => [...newTags.map(t => t.id), ...prev]);
+            }
+            
+            return [...newTags, ...updatedTags];
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+      }
+    };
+    
+    loadSettings();
+  }, []);
 
   const activeTags = tags.filter((tag) => tag.active);
   const inactiveTags = tags.filter((tag) => !tag.active);
@@ -80,6 +139,27 @@ export default function CustomizeInteractive({
       // Add to selection order
       setSelectionOrder((order) => [...order, newTag.id]);
       setInputValue("");
+    }
+  };
+
+  // Save to storage when clicking Get Started
+  const handleGetStarted = async () => {
+    // Get all active tags (selected categories)
+    const selectedCategories = tags.filter(t => t.active).map(t => t.label);
+    
+    // Save the additional rules (custom prompt) to storage
+    await setCustomPrompt(additionalRules);
+    
+    // Save the selected categories to storage
+    await setCustomGroups(selectedCategories);
+    
+    console.log('Saved to storage:');
+    console.log('- Additional Rules:', additionalRules);
+    console.log('- Selected Categories:', selectedCategories);
+    
+    // Call the onNext callback
+    if (onNext) {
+      onNext();
     }
   };
 
@@ -237,7 +317,7 @@ export default function CustomizeInteractive({
 
       {/* Mode Dropdown */}
       <div className="absolute left-[106px] top-[20px]">
-        <ModeDropdown selectedMode={selectedMode} onModeChange={onModeChange} />
+        <ModeDropdown selectedMode={selectedMode} onModeChange={onModeChange || (() => {})} />
       </div>
 
       {/* Tag Selector */}
@@ -365,7 +445,7 @@ export default function CustomizeInteractive({
       {/* Get Started Button */}
       <div
         className="absolute bg-[rgba(236,236,240,0.5)] h-[49px] left-[31px] rounded-[200px] top-[513px] w-[357px] cursor-pointer hover:bg-[rgba(236,236,240,0.7)] transition-colors"
-        onClick={onNext}
+        onClick={handleGetStarted}
       >
         <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.28)] border-solid inset-0 pointer-events-none rounded-[200px]" />
         <p className="absolute font-['Arial:Regular',_sans-serif] leading-[20px] left-[calc(50%-37.5px)] not-italic text-[14px] text-black text-nowrap top-[14px] whitespace-pre">

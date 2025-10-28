@@ -71,11 +71,9 @@ export default function App() {
   const startAIGrouping = async () => {
     console.log("Starting AI categorization...");
     
-    // Save current settings
+    // Save current settings (customPrompt and customGroups are already saved by CustomizeInteractive)
     await saveUserSettings({
-      selectedMode: selectedMode as 'one-time' | 'smart' | 'aggressive',
-      customPrompt,
-      customGroups
+      selectedMode: selectedMode as 'one-time' | 'smart' | 'aggressive'
     });
     
     setCurrentStep(4);
@@ -139,6 +137,9 @@ export default function App() {
 
   const handleCustomizeComplete = async () => {
     console.log("Customize completed, starting AI categorization...");
+    
+    // Settings are already saved in storage by CustomizeInteractive's handleGetStarted
+    // Just start the AI grouping process
     await startAIGrouping();
   };
 
@@ -169,7 +170,11 @@ export default function App() {
       {currentStep === 5 && <GeneratingGroupsComplete onNext={handleViewResults} selectedMode={selectedMode} onModeChange={handleModeChange} />}
       {currentStep === 6 && <Suggestion selectedMode={selectedMode} onModeChange={handleModeChange} onConfirm={handleConfirmGrouping} onCustomize={handleCustomize} categorizedResult={categorizedResult || {}} />}
       {currentStep === 7 && <SuggestionFinal selectedMode={selectedMode} onModeChange={handleModeChange} onCustomize={handleCustomize} categorizedResult={categorizedResult || {}} />}
-      {currentStep === 8 && <CustomizeInteractive selectedMode={selectedMode} onModeChange={handleModeChange} onNext={handleCustomizeComplete} />}
+      {currentStep === 8 && <CustomizeInteractive 
+        selectedMode={selectedMode} 
+        onModeChange={handleModeChange} 
+        onNext={handleCustomizeComplete}
+      />}
     </LayoutGroup>
   );
 }
