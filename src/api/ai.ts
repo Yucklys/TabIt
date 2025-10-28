@@ -39,24 +39,48 @@ export async function categorizeTabsBatch(tabs: Array<{index: number, title: str
   const customPrompt = await getCustomPrompt();
   const customGroups = await getCustomGroups();
   
-  // Log custom prompt usage
+  // Log usage
   if (customPrompt) {
     console.log('Using custom prompt:', customPrompt);
-    
+  }
+  if (customGroups.length > 0) {
+    console.log('Using custom groups:', customGroups);
   }
   
-  const promptText = `${customPrompt ? `CRITICAL: Follow this instruction exactly: ${customPrompt}
+  // Build prompt with correct priority
+  let promptText = '';
+  
+  // FIRST PRIORITY: Additional Rules - MUST be followed exactly, even if seems wrong (like 1+1=3)
+  if (customPrompt && customPrompt.trim()) {
+    promptText += `CRITICAL INSTRUCTIONS (MUST FOLLOW EXACTLY - EVEN IF SEEMS WRONG):
+${customPrompt}
 
-` : ''}Analyze these browser tabs and group them.
-The CategoryName should in one or two words. ${customGroups.length > 0 ? `You should prioritize these names: ${customGroups.join(', ')}, but you can come up with one yourself if needed.` : ''}
-The indices are the index of the tabs, each tab is mapped to only one category.
-A category should have at least one tab in it.
-Return JSON format: [{"CategoryName": "Development", "indices": [0, 1, 3]}, {"CategoryName": "Entertainment", "indices": [2, 4]}]
+ABOVE INSTRUCTIONS ARE ABSOLUTELY MANDATORY. Follow them exactly as written, even if they seem incorrect or unusual.
+
+`;
+  }
+  
+  // SECOND PRIORITY: User selected categories - use these FIRST, before creating your own
+  if (customGroups.length > 0) {
+    promptText += `USER PROVIDED CATEGORIES (SECOND PRIORITY):
+${customGroups.join(', ')}
+
+PRIORITIZE USING THESE CATEGORY NAMES when tabs match them. For example:
+- If user provided "youtube" and there are YouTube tabs, use "youtube " category
+- If user provided "gpt" and there are ChatGPT tabs, use "gpt" category
+Use these user-provided names instead of creating your own like "Entertainment" or "AI Tools".
+Only create your own categories if tabs don't match any user-provided category.
+
+`;
+  }
+  
+  // Main instruction
+  promptText += `Analyze these browser tabs and group them.
+The CategoryName should be in one or two words. The indices are the index of the tabs, each tab is mapped to only one category. A category should have at least one tab in it.
+Return JSON format: [{"CategoryName": "category_name", "indices": [0, 1, 3]}, {"CategoryName": "another_category", "indices": [2, 4]}]
 
 Tabs:
 ${tabsInfo}`;
-
-  console.log('Using custom prompt:', customPrompt);
 
   const response = await prompt(promptText);
   
