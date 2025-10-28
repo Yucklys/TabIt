@@ -142,6 +142,45 @@ export default function CustomizeInteractive({
     }
   };
 
+  // Track if initial load is complete
+  const [isInitialLoadComplete, setIsInitialLoadComplete] = useState(false);
+
+  // Mark initial load as complete after first load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoadComplete(true);
+    }, 1000); // Wait 1 second after mount
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Auto-save tags to storage whenever tags change (after initial load)
+  useEffect(() => {
+    if (!isInitialLoadComplete) return;
+    
+    const saveTags = async () => {
+      const activeTagLabels = tags.filter(t => t.active).map(t => t.label);
+      await setCustomGroups(activeTagLabels);
+      console.log('Auto-saved tags to storage:', activeTagLabels);
+    };
+    
+    saveTags();
+  }, [tags, isInitialLoadComplete]);
+
+  // Auto-save additional rules to storage whenever it changes (after initial load)
+  useEffect(() => {
+    if (!isInitialLoadComplete) return;
+    
+    const saveRules = async () => {
+      await setCustomPrompt(additionalRules);
+      if (additionalRules) {
+        console.log('Auto-saved additional rules to storage:', additionalRules);
+      }
+    };
+    
+    saveRules();
+  }, [additionalRules, isInitialLoadComplete]);
+
   // Save to storage when clicking Get Started
   const handleGetStarted = async () => {
     // Get all active tags (selected categories)
@@ -253,7 +292,18 @@ export default function CustomizeInteractive({
             />
           </div>
 
-          <MiEnter />
+          <MiEnter onClick={() => {
+            if (inputValue.trim()) {
+              const newTag: Tag = {
+                id: `tag-${Date.now()}`,
+                label: inputValue.trim(),
+                active: true,
+              };
+              setTags((prev) => [newTag, ...prev]);
+              setSelectionOrder((order) => [...order, newTag.id]);
+              setInputValue("");
+            }
+          }} />
 
           {/* Scrollable tag list */}
           <div className="absolute left-[10px] top-[91px] w-[333px] h-[150px] overflow-y-auto pr-[8px]">
@@ -468,9 +518,12 @@ function GridiconsDropdown1() {
   );
 }
 
-function MiEnter() {
+function MiEnter({ onClick }: { onClick?: () => void }) {
   return (
-    <div className="absolute left-[314px] size-[13px] top-[61.01px]">
+    <div 
+      className="absolute left-[314px] size-[13px] top-[61.01px] cursor-pointer hover:opacity-70 transition-opacity"
+      onClick={onClick}
+    >
       <div className="absolute inset-[20.83%_12.5%_20.78%_12.5%]">
         <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 10 8">
           <g>
