@@ -3,7 +3,7 @@ import svgPaths from "../imports/svg-8cbxbja4km";
 import { ModeDropdown } from "./ModeDropdown";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Slider } from "./ui/slider";
-import { setCustomPrompt, setCustomGroups } from "../api/storage";
+import { setCustomPrompt, setCustomGroups, setTabRange as saveTabRange, getTabRange } from "../api/storage";
 
 interface Tag {
   id: string;
@@ -51,14 +51,21 @@ export default function CustomizeInteractive({
         // Load saved data
         const savedPrompt = await getCustomPrompt();
         const savedGroups = await getCustomGroups();
+        const savedTabRange = await getTabRange();
         
         console.log('Loaded from storage:');
         console.log('- Saved prompt:', savedPrompt);
         console.log('- Saved groups:', savedGroups);
+        console.log('- Saved tab range:', savedTabRange);
         
         // Set additional rules
         if (savedPrompt) {
           setAdditionalRules(savedPrompt);
+        }
+        
+        // Set tab range
+        if (savedTabRange) {
+          setTabRange(savedTabRange);
         }
         
         // Set active tags based on saved groups
@@ -127,6 +134,18 @@ export default function CustomizeInteractive({
     });
   };
 
+  // Delete a custom tag (not default ones)
+  const deleteTag = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent toggling when clicking delete
+    setTags((prev) => prev.filter(t => t.id !== id));
+    setSelectionOrder((order) => order.filter(tagId => tagId !== id));
+  };
+
+  // Check if a tag is a custom one (not in default tags)
+  const isCustomTag = (tagId: string) => {
+    return !defaultTags.find(t => t.id === tagId);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && inputValue.trim()) {
       const newTag: Tag = {
@@ -180,6 +199,19 @@ export default function CustomizeInteractive({
     
     saveRules();
   }, [additionalRules, isInitialLoadComplete]);
+
+  // Auto-save tab range to storage whenever it changes (after initial load)
+  useEffect(() => {
+    if (!isInitialLoadComplete) return;
+    
+  const saveRange = async () => {
+    const range: [number, number] = [tabRange[0], tabRange[1]];
+    await saveTabRange(range);
+    console.log('Auto-saved tab range to storage:', range);
+  };
+    
+    saveRange();
+  }, [tabRange, isInitialLoadComplete]);
 
   // Save to storage when clicking Get Started
   const handleGetStarted = async () => {
@@ -312,26 +344,56 @@ export default function CustomizeInteractive({
               {activeTags.map((tag) => (
                 <div
                   key={tag.id}
-                  className="content-stretch flex gap-[9px] items-center cursor-pointer hover:opacity-80"
-                  onClick={() => toggleTag(tag.id)}
+                  className="content-stretch flex gap-[9px] items-center hover:opacity-80 relative group"
                 >
-                  <div className="bg-[#4285f4] rounded-[7px] shrink-0 size-[24px]" />
-                  <p className="font-['Arimo:Regular',_sans-serif] font-normal leading-[16px] text-[12px] text-neutral-950">
-                    {tag.label}
-                  </p>
+                  <div 
+                    className="cursor-pointer flex gap-[9px] items-center"
+                    onClick={() => toggleTag(tag.id)}
+                  >
+                    <div className="bg-[#4285f4] rounded-[7px] shrink-0 size-[24px]" />
+                    <p className="font-['Arimo:Regular',_sans-serif] font-normal leading-[16px] text-[12px] text-neutral-950">
+                      {tag.label}
+                    </p>
+                  </div>
+                  {isCustomTag(tag.id) && (
+                    <button
+                      onClick={(e) => deleteTag(tag.id, e)}
+                      className="absolute right-0 size-[16px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-100 rounded-[4px]"
+                      title="Delete this category"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M9 3L3 9M3 3L9 9" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  )}
                 </div>
               ))}
               {/* Inactive tags */}
               {inactiveTags.map((tag) => (
                 <div
                   key={tag.id}
-                  className="content-stretch flex gap-[9px] items-center cursor-pointer hover:opacity-80"
-                  onClick={() => toggleTag(tag.id)}
+                  className="content-stretch flex gap-[9px] items-center hover:opacity-80 relative group"
                 >
-                  <div className="bg-[#d9d9d9] rounded-[7px] shrink-0 size-[24px]" />
-                  <p className="font-['Arimo:Regular',_sans-serif] font-normal leading-[16px] text-[12px] text-neutral-950">
-                    {tag.label}
-                  </p>
+                  <div 
+                    className="cursor-pointer flex gap-[9px] items-center"
+                    onClick={() => toggleTag(tag.id)}
+                  >
+                    <div className="bg-[#d9d9d9] rounded-[7px] shrink-0 size-[24px]" />
+                    <p className="font-['Arimo:Regular',_sans-serif] font-normal leading-[16px] text-[12px] text-neutral-950">
+                      {tag.label}
+                    </p>
+                  </div>
+                  {isCustomTag(tag.id) && (
+                    <button
+                      onClick={(e) => deleteTag(tag.id, e)}
+                      className="absolute right-0 size-[16px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-100 rounded-[4px]"
+                      title="Delete this category"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M9 3L3 9M3 3L9 9" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

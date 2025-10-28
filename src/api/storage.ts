@@ -6,6 +6,7 @@ export interface UserSettings {
   customPrompt?: string;
   customGroups?: string[];
   selectedMode?: 'one-time' | 'smart' | 'aggressive';
+  tabRange?: [number, number];
 }
 
 export async function saveUserSettings(settings: Partial<UserSettings>): Promise<void> {
@@ -13,12 +14,22 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
 }
 
 export async function getUserSettings(): Promise<UserSettings> {
-  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'selectedMode']);
+  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'selectedMode', 'tabRange']);
   return {
     customPrompt: result.customPrompt || '',
     customGroups: result.customGroups || [],
-    selectedMode: result.selectedMode || 'smart'
+    selectedMode: result.selectedMode || 'smart',
+    tabRange: result.tabRange || [1, 6]
   };
+}
+
+export async function getTabRange(): Promise<[number, number]> {
+  const result = await chrome.storage.local.get('tabRange');
+  return result.tabRange || [1, 6];
+}
+
+export async function setTabRange(range: [number, number]): Promise<void> {
+  await chrome.storage.local.set({ tabRange: range });
 }
 
 export async function getCustomPrompt(): Promise<string> {

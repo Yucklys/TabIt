@@ -7,7 +7,10 @@ type Tab = chrome.tabs.Tab;
  * Core categorization logic shared by all grouping modes
  * Returns categorized tabs with their indices
  */
-export async function categorizeAndGroup(tabs: Tab[]): Promise<{ [category: string]: [number, ...number[]] }> {
+export async function categorizeAndGroup(
+  tabs: Tab[], 
+  existingGroups: string[] = []
+): Promise<{ [category: string]: [number, ...number[]] }> {
   const startTime = Date.now();
   
   const allTabInfoList = getTabInfoList(tabs);
@@ -26,7 +29,7 @@ export async function categorizeAndGroup(tabs: Tab[]): Promise<{ [category: stri
     }
   });
 
-  const categorizedTabs = await categorizeTabsBatch(validTabInfoList);
+  const categorizedTabs = await categorizeTabsBatch(validTabInfoList, existingGroups);
   
   const categorizedResult: { [category: string]: [number, ...number[]] } = {};
   for (const group of categorizedTabs) {

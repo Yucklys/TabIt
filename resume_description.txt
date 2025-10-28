@@ -1,4 +1,0 @@
-TabIt - AI-Powered Tab Manager | Chrome Extension & AI | Hackathon Project
-
-Built an intelligent tab management Chrome extension with on-device AI categorization using Gemini Nano, implementing React + TypeScript frontend, Manifest V3 APIs, and custom prompt engineering for flexible grouping logic.
-Designed and implemented three distinct grouping algorithms (one-time, smart, aggressive) with JSON response parsing, session storage management, and real-time tab analysis to automatically categorize browser tabs based on title and URL patterns.
