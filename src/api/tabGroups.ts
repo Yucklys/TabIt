@@ -73,6 +73,38 @@ export async function getAllTabGroups(): Promise<TabGroup[]> {
 }
 
 /**
+ * Get tab count for a specific group
+ */
+export async function getTabCountForGroup(groupId: number): Promise<number> {
+  try {
+    const tabs = await chrome.tabs.query({ groupId });
+    return tabs.length;
+  } catch (error) {
+    console.error('Error getting tab count for group:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get all tab groups with their tab counts
+ */
+export async function getAllTabGroupsWithCounts(): Promise<{ group: TabGroup; count: number }[]> {
+  try {
+    const groups = await chrome.tabGroups.query({});
+    const groupsWithCounts = await Promise.all(
+      groups.map(async (group) => {
+        const count = await getTabCountForGroup(group.id);
+        return { group, count };
+      })
+    );
+    return groupsWithCounts;
+  } catch (error) {
+    console.error('Error getting tab groups with counts:', error);
+    return [];
+  }
+}
+
+/**
  * Delete a tab group by ID
  */
 export async function deleteTabGroup(groupId: number): Promise<boolean> {

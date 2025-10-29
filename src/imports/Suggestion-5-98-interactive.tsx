@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { ModeDropdown } from "../components/ModeDropdown";
 import { GroupDropdown } from "../components/GroupDropdown";
-import { getAllTabGroups } from "../api/tabGroups";
+import { getAllTabGroupsWithCounts } from "../api/tabGroups";
 import { useState, useEffect } from "react";
 
 function More({ groupId }: { groupId: number }) {
@@ -282,14 +282,19 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
   onCustomize?: () => void;
   categorizedResult: { [category: string]: [number, ...number[]] };
 }) {
-  // Add data fetching for actual tab groups
+  // Fetch tab groups with counts from API
   const [actualGroups, setActualGroups] = useState<chrome.tabGroups.TabGroup[]>([]);
   const [tabCounts, setTabCounts] = useState<{ [groupId: number]: number }>({});
 
   useEffect(() => {
     const loadTabGroups = async () => {
-      const groups = await getAllTabGroups();
-      setActualGroups(groups);
+      const groupsWithCounts = await getAllTabGroupsWithCounts();
+      setActualGroups(groupsWithCounts.map(g => g.group));
+      const counts: { [groupId: number]: number } = {};
+      groupsWithCounts.forEach(({ group, count }) => {
+        counts[group.id] = count;
+      });
+      setTabCounts(counts);
     };
     loadTabGroups();
 
@@ -312,22 +317,6 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
       chrome.tabGroups.onRemoved.removeListener(handleRemoved);
     };
   }, []);
-
-  // Get tab counts for each actual group
-  useEffect(() => {
-    const fetchTabCounts = async () => {
-      const counts: { [groupId: number]: number } = {};
-      for (const group of actualGroups) {
-        const tabs = await chrome.tabs.query({ groupId: group.id });
-        counts[group.id] = tabs.length;
-      }
-      setTabCounts(counts);
-    };
-    
-    if (actualGroups.length > 0) {
-      fetchTabCounts();
-    }
-  }, [actualGroups]);
 
   const handleGroupAction = (groupId: number, action: string) => {
     console.log(`Group ${groupId}: ${action}`);
