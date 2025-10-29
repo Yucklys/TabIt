@@ -105,17 +105,19 @@ export async function getAllTabGroupsWithCounts(): Promise<{ group: TabGroup; co
 }
 
 /**
- * Delete a tab group by ID
+ * Delete a tab group by ID (ungroup all tabs in the group)
  */
 export async function deleteTabGroup(groupId: number): Promise<boolean> {
-  const tabsInGroup = await chrome.tabs.query({ groupId });
-  if (tabsInGroup.length == 0) {
+  try {
+    const tabs = await chrome.tabs.query({ groupId });
+    for (const tab of tabs) {
+      if (tab.id !== undefined) {
+        await chrome.tabs.ungroup(tab.id);
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error('Error deleting tab group:', error);
     return false;
   }
-  tabsInGroup.forEach(tab => {
-    if (tab.id !== undefined) {
-      chrome.tabs.ungroup(tab.id);
-    }
-  });
-  return true;
 }
