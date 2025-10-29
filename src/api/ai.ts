@@ -66,8 +66,7 @@ ABOVE INSTRUCTIONS ARE ABSOLUTELY MANDATORY. Follow them exactly as written, eve
 ${customGroups.join(', ')}
 
 PRIORITIZE USING THESE CATEGORY NAMES when tabs match them. For example:
-- If user provided "youtube" and there are YouTube tabs, use "youtube " category
-- If user provided "gpt" and there are ChatGPT tabs, use "gpt" category
+- If user provided "youtube" and there are YouTube tabs, use "youtube" or "Youtube"category ( the tab name is depends on AI)
 Use these user-provided names instead of creating your own like "Entertainment" or "AI Tools".
 Only create your own categories if tabs don't match any user-provided category.
 

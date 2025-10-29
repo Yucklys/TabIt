@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { ModeDropdown } from "../components/ModeDropdown";
 import { GroupDropdown } from "../components/GroupDropdown";
+import { getAllTabGroups } from "../api/tabGroups";
+import { useState, useEffect } from "react";
 
 function More({ groupId }: { groupId: number }) {
   const handleGroupAction = (action: string) => {
@@ -70,39 +73,37 @@ function More1() {
   return <More groupId={2} />;
 }
 
-function Container2() {
+function Container2({ title }: { title: string }) {
   return (
     <div className="absolute content-stretch flex h-[20px] items-center justify-between left-[35.2px] top-[14.2px] w-[305px] pr-[30px]" data-name="Container">
-      <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic relative shrink-0 text-[14px] text-neutral-950 text-nowrap whitespace-pre">Group 2: News</p>
+      <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic relative shrink-0 text-[14px] text-neutral-950 text-nowrap whitespace-pre">{title}</p>
       <More1 />
     </div>
   );
 }
 
-function PromptSelection1() {
+function PromptSelection1({ title }: { title: string }) {
   return (
     <div className="h-[49px] relative shrink-0 w-full" data-name="PromptSelection">
       <div className="bg-clip-padding border-0 border-[transparent] border-solid box-border h-[49px] relative w-full">
-        <Container2 />
+        <Container2 title={title} />
       </div>
     </div>
   );
 }
 
-function Card1() {
+function Card1({ title }: { title: string }) {
   return (
     <div className="absolute bg-white box-border content-stretch flex flex-col h-[74px] items-center left-0 pb-[0.8px] pl-[12.8px] pr-[0.8px] pt-[12.8px] rounded-[14px] top-[-4px] w-[354px]" data-name="Card">
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[14px]" />
-      <PromptSelection1 />
+      <PromptSelection1 title={title} />
     </div>
   );
 }
 
 function Container3() {
   return (
-    <div className="absolute h-[70px] left-[33px] top-[223px] w-[354px]" data-name="Container">
-      <Card1 />
-    </div>
+    <div className="absolute h-[70px] left-[33px] top-[223px] w-[354px]" data-name="Container" />
   );
 }
 
@@ -192,13 +193,14 @@ function IconParkRight() {
   );
 }
 
-function GroupingMode() {
+function GroupingMode({ style }: { style?: React.CSSProperties }) {
   return (
     <button
-      className="absolute bg-[#8c8c8c] h-[49px] left-1/2 rounded-[200px] top-[461px] translate-x-[-50%] w-[354px] cursor-not-allowed opacity-50"
+      className="absolute bg-[#8c8c8c] h-[49px] left-[33px] rounded-[200px] w-[354px] cursor-not-allowed opacity-50"
       data-name="Grouping Mode"
       disabled
       type="button"
+      style={style}
     >
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.28)] border-solid inset-0 pointer-events-none rounded-[200px]" />
       <IconParkRight />
@@ -207,13 +209,14 @@ function GroupingMode() {
   );
 }
 
-function GroupingMode1({ onClick }: { onClick?: () => void }) {
+function GroupingMode1({ onClick, style }: { onClick?: () => void; style?: React.CSSProperties }) {
   return (
     <button
       onClick={onClick}
-      className="absolute bg-[rgba(236,236,240,0.5)] h-[35px] left-[33px] rounded-[200px] top-[528px] w-[354px] cursor-pointer hover:bg-[rgba(236,236,240,0.7)] transition-colors duration-200"
+      className="absolute bg-[rgba(236,236,240,0.5)] h-[35px] left-[33px] rounded-[200px] w-[354px] cursor-pointer hover:bg-[rgba(236,236,240,0.7)] transition-colors duration-200"
       data-name="Grouping Mode"
       type="button"
+      style={style}
     >
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.28)] border-solid inset-0 pointer-events-none rounded-[200px]" />
       <p className="absolute font-['Arial:Regular',_sans-serif] leading-[20px] left-[calc(50%-33px)] not-italic text-[14px] text-neutral-950 text-nowrap top-[7px] whitespace-pre">Customize</p>
@@ -279,23 +282,118 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
   onCustomize?: () => void;
   categorizedResult: { [category: string]: [number, ...number[]] };
 }) {
+  // Add data fetching for actual tab groups
+  const [actualGroups, setActualGroups] = useState<chrome.tabGroups.TabGroup[]>([]);
+  const [tabCounts, setTabCounts] = useState<{ [groupId: number]: number }>({});
+
+  useEffect(() => {
+    const loadTabGroups = async () => {
+      const groups = await getAllTabGroups();
+      setActualGroups(groups);
+    };
+    loadTabGroups();
+
+    // Listen to Chrome tab group events
+    const handleUpdated = () => {
+      console.log('Tab group updated');
+      loadTabGroups();
+    };
+
+    const handleRemoved = () => {
+      console.log('Tab group removed');
+      loadTabGroups();
+    };
+
+    chrome.tabGroups.onUpdated.addListener(handleUpdated);
+    chrome.tabGroups.onRemoved.addListener(handleRemoved);
+
+    return () => {
+      chrome.tabGroups.onUpdated.removeListener(handleUpdated);
+      chrome.tabGroups.onRemoved.removeListener(handleRemoved);
+    };
+  }, []);
+
+  // Get tab counts for each actual group
+  useEffect(() => {
+    const fetchTabCounts = async () => {
+      const counts: { [groupId: number]: number } = {};
+      for (const group of actualGroups) {
+        const tabs = await chrome.tabs.query({ groupId: group.id });
+        counts[group.id] = tabs.length;
+      }
+      setTabCounts(counts);
+    };
+    
+    if (actualGroups.length > 0) {
+      fetchTabCounts();
+    }
+  }, [actualGroups]);
+
   const handleGroupAction = (groupId: number, action: string) => {
     console.log(`Group ${groupId}: ${action}`);
   };
 
   const categories = Object.keys(categorizedResult);
   const colors = ['#ff4f4f', '#ffab04', '#0486ff', '#03b151', '#9b59b6', '#e67e22'];
+  
+  // Use actual groups if available
+  const displayGroups = actualGroups.length > 0 ? actualGroups : [];
+
+  // Calculate button position based on number of groups
+  const numGroups = displayGroups.length > 0 ? displayGroups.length : categories.length;
+  const buttonsTop = 147 + (numGroups * 76) + 20; // After all groups + margin
 
   return (
-    <div className="h-[589px] overflow-clip relative shrink-0 w-[420px]" data-name="Free_form">
-      {/* Header */}
+    <div className="h-[589px] overflow-y-auto relative shrink-0 w-[420px]" data-name="Free_form">
+      {/* Header - fixed */}
       <div className="absolute font-['Arial:Regular',_sans-serif] leading-[20px] left-[47px] not-italic text-[14px] text-neutral-950 top-[83px] w-[318px]">
         <p className="mb-0">Tab Groups</p>
-        <p className="text-[#717182]">{categories.length} groups active</p>
+        <p className="text-[#717182]">{displayGroups.length > 0 ? displayGroups.length : categories.length} groups active</p>
       </div>
       
-      {/* Dynamic group rendering */}
-      {categories.length > 0 ? (
+      {/* Render actual tab groups if available */}
+      {displayGroups.length > 0 ? (
+        displayGroups.map((group, index) => {
+          const topPosition = 147 + (index * 76);
+          const color = colors[index % colors.length];
+          
+          return (
+            <div 
+              key={group.id} 
+              className="absolute" 
+              style={{ top: `${topPosition}px`, left: '33px', width: '354px' }}
+            >
+              <div className="absolute bg-white box-border content-stretch flex flex-col h-[58px] items-center left-0 pb-[0.8px] pl-[12.8px] pr-[0.8px] pt-[12.8px] rounded-[14px] top-0 w-[354px]">
+                <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[14px]" />
+                <div className="absolute content-stretch flex flex-col gap-[2px] h-[22px] items-start left-[52px] top-[19px] w-[305px]">
+                  <div className="h-[20px] relative w-full flex items-center justify-between pr-[30px]">
+                    <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
+                      {group.title || `Group ${index + 1}`}
+                    </p>
+                    <GroupDropdown 
+                      groupId={group.id}
+                      onRename={() => handleGroupAction(group.id, "rename")}
+                      onChangeColor={() => handleGroupAction(group.id, "change color")}
+                      onUngroup={() => handleGroupAction(group.id, "ungroup")}
+                      className=""
+                    />
+                  </div>
+                </div>
+              </div>
+              {/* Color indicator with tab count */}
+              <div 
+                className="absolute rounded-[6px] left-[12px] top-[19px] w-[28px] h-[28px] flex items-center justify-center overflow-hidden"
+                style={{ backgroundColor: color }}
+              >
+                <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
+                <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[12px] text-center text-white z-10">
+                  {tabCounts[group.id] || 0}
+                </p>
+              </div>
+            </div>
+          );
+        })
+      ) : categories.length > 0 ? (
         categories.map((category, index) => {
           const tabCount = categorizedResult[category].length;
           const topPosition = 147 + (index * 76); // Space groups vertically
@@ -305,7 +403,7 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
             <div key={category} className="absolute" style={{ top: `${topPosition}px`, left: '33px', width: '354px' }}>
               <div className="absolute bg-white box-border content-stretch flex flex-col h-[58px] items-center left-0 pb-[0.8px] pl-[12.8px] pr-[0.8px] pt-[12.8px] rounded-[14px] top-0 w-[354px]">
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[14px]" />
-                <div className="absolute content-stretch flex flex-col gap-[2px] h-[22px] items-start left-[35.2px] top-[19px] w-[305px]">
+                <div className="absolute content-stretch flex flex-col gap-[2px] h-[22px] items-start left-[52px] top-[19px] w-[305px]">
                   <div className="h-[20px] relative w-full flex items-center justify-between pr-[30px]">
                     <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
                       Group {index + 1}: {category}
@@ -322,7 +420,7 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
               </div>
               {/* Color indicator with tab count */}
               <div 
-                className="absolute rounded-[6px] left-[12px] top-[19px] w-[20px] h-[20px] flex items-center justify-center"
+                className="absolute rounded-[6px] left-[12px] top-[19px] w-[28px] h-[28px] flex items-center justify-center overflow-hidden"
                 style={{ backgroundColor: color }}
               >
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
@@ -339,10 +437,11 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
         </div>
       )}
       
-      <Container5 />
-      <Container6 />
-      <GroupingMode />
-      <GroupingMode1 onClick={onCustomize} />
+      {/* Buttons - positioned after all groups */}
+      <GroupingMode style={{ top: `${buttonsTop}px` }} />
+      <GroupingMode1 onClick={onCustomize} style={{ top: `${buttonsTop + 67}px` }} />
+      
+      {/* Fixed elements */}
       <Group1 />
       <ModeDropdown
         selectedMode={selectedMode}
