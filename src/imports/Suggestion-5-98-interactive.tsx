@@ -5,7 +5,7 @@ import { getAllTabGroupsWithCounts } from "../api/tabGroups";
 import { handleRenameGroup } from "../api/renameTabGroup";
 import { handleChangeGroupColor } from "../api/recolorTabGroup";
 import { handleUngroup } from "../api/ungroupTabs";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
 function More({ groupId }: { groupId: number }) {
   const handleGroupAction = (action: string) => {
@@ -289,24 +289,18 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
   const [actualGroups, setActualGroups] = useState<chrome.tabGroups.TabGroup[]>([]);
   const [tabCounts, setTabCounts] = useState<{ [groupId: number]: number }>({});
   
-  // Rename dialog state
-  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [renameGroupId, setRenameGroupId] = useState<number | null>(null);
-  const [renameInputValue, setRenameInputValue] = useState("");
-  const renameInputRef = useRef<HTMLInputElement>(null);
-  
-  // Dialog drag state
-  const [dialogPosition, setDialogPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const dialogRef = useRef<HTMLDivElement>(null);
+  // Inline rename state
+  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const editingInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus input when dialog opens
+  // Focus input when editing starts
   useEffect(() => {
-    if (isRenameDialogOpen && renameInputRef.current) {
-      setTimeout(() => renameInputRef.current?.focus(), 100);
+    if (editingGroupId && editingInputRef.current) {
+      editingInputRef.current.focus();
+      editingInputRef.current.select();
     }
-  }, [isRenameDialogOpen]);
+  }, [editingGroupId]);
 
   useEffect(() => {
     const loadTabGroups = async () => {
@@ -346,12 +340,11 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
     try {
       switch (action) {
         case 'rename': {
-          // Find the group and get its current title
+          // Start inline editing
           const group = actualGroups.find(g => g.id === groupId);
           if (group) {
-            setRenameGroupId(groupId);
-            setRenameInputValue(group.title || "");
-            setIsRenameDialogOpen(true);
+            setEditingGroupId(groupId);
+            setEditingName(group.title || "");
           }
           break;
         }
@@ -387,82 +380,32 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
     }
   };
 
-  const handleConfirmRename = async () => {
-    if (renameGroupId && renameInputValue.trim()) {
-      const result = await handleRenameGroup(renameGroupId, renameInputValue.trim());
-      
+  const handleSaveRename = async (groupId: number) => {
+    if (editingName.trim()) {
+      const result = await handleRenameGroup(groupId, editingName.trim());
       if (result.success) {
-        setIsRenameDialogOpen(false);
-        setRenameGroupId(null);
-        setRenameInputValue("");
-        
-        // Update groups if returned
-        if (result.groups) {
-          setActualGroups(result.groups.map(g => g.group));
-          const counts: { [gid: number]: number } = {};
-          result.groups.forEach(({ group, count }) => {
-            counts[group.id] = count;
-          });
-          setTabCounts(counts);
-        }
+        setEditingGroupId(null);
+        setEditingName("");
       }
+    } else {
+      // Cancel if empty
+      setEditingGroupId(null);
+      setEditingName("");
     }
   };
 
   const handleCancelRename = () => {
-    setIsRenameDialogOpen(false);
-    setRenameGroupId(null);
-    setRenameInputValue("");
+    setEditingGroupId(null);
+    setEditingName("");
   };
 
-  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+  const handleRenameKeyDown = (e: React.KeyboardEvent, groupId: number) => {
     if (e.key === 'Enter') {
-      handleConfirmRename();
+      handleSaveRename(groupId);
     } else if (e.key === 'Escape') {
       handleCancelRename();
     }
   };
-
-  // Dialog drag handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setDragStart({
-      x: e.clientX - dialogPosition.x,
-      y: e.clientY - dialogPosition.y
-    });
-  };
-
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging) {
-      setDialogPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
-    }
-  }, [isDragging, dragStart]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
-
-  // Add global mouse event listeners for dragging
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
-
-  // Reset dialog position when it closes
-  useEffect(() => {
-    if (!isRenameDialogOpen) {
-      setDialogPosition({ x: 0, y: 0 });
-    }
-  }, [isRenameDialogOpen]);
 
   const categories = Object.keys(categorizedResult);
   const colors = ['#ff4f4f', '#ffab04', '#0486ff', '#03b151', '#9b59b6', '#e67e22'];
@@ -498,16 +441,31 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[14px]" />
                 <div className="absolute content-stretch flex flex-col gap-[2px] h-[22px] items-start left-[52px] top-[19px] w-[305px]">
                   <div className="h-[20px] relative w-full flex items-center justify-between pr-[30px]">
-                    <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
-                      {group.title || `Group ${index + 1}`}
-                    </p>
-                    <GroupDropdown 
-                      groupId={group.id}
-                      onRename={() => handleGroupAction(group.id, "rename")}
-                      onChangeColor={() => handleGroupAction(group.id, "change color")}
-                      onUngroup={() => handleGroupAction(group.id, "ungroup")}
-                      className=""
-                    />
+                    {editingGroupId === group.id ? (
+                      <input
+                        ref={editingInputRef}
+                        type="text"
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onKeyDown={(e) => handleRenameKeyDown(e, group.id)}
+                        onBlur={() => handleSaveRename(group.id)}
+                        className="flex-1 font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 px-1 border border-blue-500 rounded focus:outline-none"
+                        style={{ background: 'white' }}
+                      />
+                    ) : (
+                      <>
+                        <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
+                          {group.title || `Group ${index + 1}`}
+                        </p>
+                        <GroupDropdown 
+                          groupId={group.id}
+                          onRename={() => handleGroupAction(group.id, "rename")}
+                          onChangeColor={() => handleGroupAction(group.id, "change color")}
+                          onUngroup={() => handleGroupAction(group.id, "ungroup")}
+                          className=""
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -580,78 +538,6 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
         className="absolute left-[106px] top-[20px]"
         disabled={true}
       />
-
-      {/* Rename Dialog */}
-      {isRenameDialogOpen && (
-        <>
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/50"
-            onClick={handleCancelRename}
-            style={{ zIndex: 49 }}
-          />
-          
-          {/* Dialog */}
-          <div 
-            style={{
-              position: 'fixed',
-              left: '50%',
-              top: '50%',
-              transform: dialogPosition.x === 0 && dialogPosition.y === 0 
-                ? 'translate(-50%, -50%)' 
-                : `translate(calc(-50% + ${dialogPosition.x}px), calc(-50% + ${dialogPosition.y}px))`,
-              zIndex: 50,
-              width: '90%',
-              maxWidth: '28rem',
-            }}
-            ref={dialogRef}
-          >
-            <div 
-              className="bg-white rounded-lg border p-6 shadow-lg"
-              style={{
-                cursor: isDragging ? 'grabbing' : 'default'
-              }}
-            >
-              <div
-                onMouseDown={handleMouseDown}
-                className="select-none mb-4 border-b pb-2"
-                style={{ cursor: 'grab' }}
-              >
-                <h2 className="text-lg leading-none font-semibold">Rename Tab Group</h2>
-                <p className="text-sm text-gray-500 mt-1">Enter a new name for this tab group.</p>
-              </div>
-              
-              <div className="py-4">
-                <input
-                  ref={renameInputRef}
-                  type="text"
-                  value={renameInputValue}
-                  onChange={(e) => setRenameInputValue(e.target.value)}
-                  onKeyDown={handleRenameKeyDown}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter group name..."
-                />
-              </div>
-              
-              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                <button
-                  onClick={handleCancelRename}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmRename}
-                  disabled={!renameInputValue.trim()}
-                  className="px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                >
-                  Rename
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
