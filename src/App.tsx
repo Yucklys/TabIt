@@ -13,15 +13,12 @@ import { getUserSettings, saveUserSettings } from "./api/storage";
 import { oneTimeGrouping } from "./mode/oneTime";
 import { smartGrouping } from "./mode/smart";
 import { aggressiveGrouping } from "./mode/aggressive";
-import { createTabGroupsFromCategories } from "./api/tabGroups";
+import { getAllTabGroups, addTabsToExistingGroup, createTabGroup } from "./api/tabGroups";
 
 export default function App() {
-  const [startup, setStartup] = useState(false);
   const [currentStep, setCurrentStep] = useState(7); // Default to 7, will be set to 1 if startup event occurs
   const [loadingFrame, setLoadingFrame] = useState(1);
   const [selectedMode, setSelectedMode] = useState("smart");
-  const [customPrompt, setCustomPrompt] = useState("");
-  const [customGroups, setCustomGroups] = useState<string[]>([]);
   const [categorizedResult, setCategorizedResult] = useState<{ [category: string]: [number, ...number[]] } | null>(null);
 
   // Check for startup event and load user settings on mount
@@ -30,14 +27,11 @@ export default function App() {
       try {
         // Listen for startup event
         chrome.runtime.onStartup.addListener(() => {
-          setStartup(true);
           setCurrentStep(1);
         });
 
         const settings = await getUserSettings();
         setSelectedMode(settings.selectedMode || "smart");
-        setCustomPrompt(settings.customPrompt || "");
-        setCustomGroups(settings.customGroups || []);
       } catch (error) {
         console.error("Failed to load user settings:", error);
       }
@@ -47,12 +41,12 @@ export default function App() {
 
   // Listen for categorization completion in session storage
   useEffect(() => {
-    const handleStorageChange = (changes: any, area: string) => {
+    const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area === 'session' && changes.categorizationStatus) {
         const status = changes.categorizationStatus.newValue;
         
         if ((status === 'completed' || status === 'no-tabs') && changes.categorizedResult) {
-          setCategorizedResult(changes.categorizedResult.newValue);
+          setCategorizedResult(changes.categorizedResult.newValue as { [category: string]: [number, ...number[]] });
           setCurrentStep(5); // Jump to suggestion step
         } else if (status === 'error') {
           console.error('Categorization failed:', changes.categorizationError?.newValue);
@@ -125,8 +119,37 @@ export default function App() {
     
     if (categorizedResult) {
       try {
-        await createTabGroupsFromCategories(categorizedResult, modifiedNames, modifiedColors);
-        console.log("Tab groups created successfully with modifications");
+        // Always check for existing groups to avoid duplicates (for all modes)
+        const existingGroups = await getAllTabGroups();
+        const existingGroupNames = new Set(existingGroups.map(g => g.title).filter(Boolean));
+        
+        console.log('Checking for existing groups:', Array.from(existingGroupNames));
+        
+        for (const [category, tabIndices] of Object.entries(categorizedResult)) {
+          if (tabIndices.length > 0) {
+            // Use modified name if provided, otherwise use original category
+            const originalCategory = category;
+            const groupName = modifiedNames?.[category] || category;
+            const color = modifiedColors?.[category];
+            
+            console.log(`Processing category: "${originalCategory}" -> final name: "${groupName}"`);
+            
+            // Check if group with this name already exists in Chrome
+            const existingGroup = existingGroups.find(g => g.title === groupName);
+            
+            if (existingGroup) {
+              // Group already exists in Chrome, merge tabs into it
+              console.log(`✓ Group "${groupName}" already exists in Chrome (ID: ${existingGroup.id}), merging ${tabIndices.length} tabs into it`);
+              await addTabsToExistingGroup(existingGroup.id, tabIndices, color);
+            } else {
+              // No existing group found, create new one
+              console.log(`✗ Group "${groupName}" doesn't exist in Chrome, creating new group with ${tabIndices.length} tabs`);
+              await createTabGroup(tabIndices, groupName, color);
+            }
+          }
+        }
+        
+        console.log("Tab groups created successfully");
         setCurrentStep(7);
       } catch (error) {
         console.error("Error creating tab groups:", error);

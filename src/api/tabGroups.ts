@@ -49,6 +49,50 @@ export async function createTabGroup(
 }
 
 /**
+ * Check if a tab group with the given name already exists
+ */
+export async function findExistingGroupByName(groupName: string): Promise<TabGroup | null> {
+  try {
+    const groups = await chrome.tabGroups.query({});
+    const existingGroup = groups.find(group => group.title === groupName);
+    return existingGroup || null;
+  } catch (error) {
+    console.error('Error finding existing group:', error);
+    return null;
+  }
+}
+
+/**
+ * Add tabs to an existing group by group ID
+ */
+export async function addTabsToExistingGroup(
+  groupId: number, 
+  tabIndices: [number, ...number[]],
+  color?: chrome.tabGroups.Color
+): Promise<TabGroup | null> {
+  try {
+    const tabIds = await getTabIdsByIndices(tabIndices);
+    
+    if (tabIds.length > 0) {
+      // Add new tabs to the existing group
+      await chrome.tabs.group({ groupId, tabIds });
+      
+      // Update color if provided
+      if (color) {
+        await chrome.tabGroups.update(groupId, { color });
+      }
+      
+      return await chrome.tabGroups.get(groupId);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error adding tabs to existing group:', error);
+    return null;
+  }
+}
+
+/**
  * Create multiple tab groups from categorized tabs with custom names and colors
  */
 export async function createTabGroupsFromCategories(

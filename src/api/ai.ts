@@ -65,10 +65,12 @@ ABOVE INSTRUCTIONS ARE ABSOLUTELY MANDATORY. Follow them exactly as written, eve
     promptText += `USER PROVIDED CATEGORIES (SECOND PRIORITY):
 ${customGroups.join(', ')}
 
+
 PRIORITIZE USING THESE CATEGORY NAMES when tabs match them. For example:
 - If user provided "youtube" and there are YouTube tabs, use "youtube" or "Youtube"category ( the tab name is depends on AI)
 Use these user-provided names instead of creating your own like "Entertainment" or "AI Tools".
 Only create your own categories if tabs don't match any user-provided category.
+- don't have duplicate categories, need check there have any duplicate categories before make
 
 `;
   }

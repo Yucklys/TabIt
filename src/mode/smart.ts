@@ -11,7 +11,7 @@ export async function smartGrouping(): Promise<void> {
   try {
     const tabs = await getUngroupedTabs();
     const existingGroups = await getAllTabGroups();
-    const existingGroupNames = existingGroups.map(g => g.title ?? "");
+    const existingGroupNames = existingGroups.map(g => g.title ?? "").filter(name => name);
     
     console.log('Existing groups:', existingGroupNames);
     
@@ -26,13 +26,27 @@ export async function smartGrouping(): Promise<void> {
       return;
     }
     
-    const categorizedResult = await categorizeAndGroup(tabs);
-
-    // Save result to session storage for UI to pick up
-    await chrome.storage.session.set({ 
-      categorizedResult: categorizedResult,
-      categorizationStatus: 'completed'
-    });
+    // Check if there are existing groups
+    // If yes and there are ungrouped tabs, pass existing group names to AI
+    if (existingGroups.length > 0) {
+      console.log('Smart mode: Found existing groups, will reuse their names');
+      // Pass existing group names to AI so it can reuse them
+      const categorizedResult = await categorizeAndGroup(tabs, existingGroupNames);
+      
+      await chrome.storage.session.set({ 
+        categorizedResult: categorizedResult,
+        categorizationStatus: 'completed'
+      });
+    } else {
+      console.log('Smart mode: No existing groups, will categorize normally');
+      // No existing groups, categorize normally
+      const categorizedResult = await categorizeAndGroup(tabs);
+      
+      await chrome.storage.session.set({ 
+        categorizedResult: categorizedResult,
+        categorizationStatus: 'completed'
+      });
+    }
     
     console.log(`Smart mode categorization completed`);
   } catch (error) {
