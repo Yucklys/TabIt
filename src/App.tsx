@@ -67,7 +67,7 @@ export default function App() {
     
     // Save current settings (customPrompt and customGroups are already saved by CustomizeInteractive)
     await saveUserSettings({
-      selectedMode: selectedMode as 'one-time' | 'smart' | 'aggressive'
+      selectedMode: selectedMode as 'onetime' | 'smart' | 'aggressive'
     });
     
     setCurrentStep(4);
@@ -79,7 +79,7 @@ export default function App() {
     try {
       // Execute the appropriate categorization function
       switch(selectedMode) {
-        case 'one-time':
+        case 'onetime':
           await oneTimeGrouping();
           break;
         case 'smart':
@@ -106,7 +106,7 @@ export default function App() {
 
   const handleModeChange = async (mode: string) => {
     setSelectedMode(mode);
-    await saveUserSettings({ selectedMode: mode as 'one-time' | 'smart' | 'aggressive' });
+    await saveUserSettings({ selectedMode: mode as 'onetime' | 'smart' | 'aggressive' });
   };
 
   const handleConfirmGrouping = async (
