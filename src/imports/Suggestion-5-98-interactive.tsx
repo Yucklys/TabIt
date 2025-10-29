@@ -3,7 +3,7 @@ import { ModeDropdown } from "../components/ModeDropdown";
 import { GroupDropdown } from "../components/GroupDropdown";
 import { getAllTabGroupsWithCounts } from "../api/tabGroups";
 import { handleRenameGroup } from "../api/renameTabGroup";
-import { handleChangeGroupColor } from "../api/recolorTabGroup";
+import { setGroupColor, AVAILABLE_COLORS } from "../api/recolorTabGroup";
 import { handleUngroup } from "../api/ungroupTabs";
 import { useState, useEffect, useRef } from "react";
 
@@ -293,6 +293,9 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
   const editingInputRef = useRef<HTMLInputElement>(null);
+  
+  // Color picker state
+  const [showingColorPickerFor, setShowingColorPickerFor] = useState<number | null>(null);
 
   // Focus input when editing starts
   useEffect(() => {
@@ -301,6 +304,31 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
       editingInputRef.current.select();
     }
   }, [editingGroupId]);
+
+  // Close color picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showingColorPickerFor !== null) {
+        const target = event.target as HTMLElement;
+        // Don't close if clicking inside the color picker
+        if (!target.closest('.color-picker-container')) {
+          setShowingColorPickerFor(null);
+        }
+      }
+    };
+
+    if (showingColorPickerFor !== null) {
+      // Add a small delay to avoid immediate closing
+      const timer = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 100);
+      
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showingColorPickerFor]);
 
   useEffect(() => {
     const loadTabGroups = async () => {
@@ -350,14 +378,9 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
         }
           
         case 'change color': {
-          // Use API to handle color change
-          const currentGroup = actualGroups.find(g => g.id === groupId);
-          if (currentGroup) {
-            const result = await handleChangeGroupColor(groupId, currentGroup.color as chrome.tabGroups.Color | undefined);
-            if (result.success) {
-              // Refresh groups - done automatically via event listeners
-            }
-          }
+          // Show color picker
+          console.log('Showing color picker for group:', groupId);
+          setShowingColorPickerFor(groupId);
           break;
         }
           
@@ -407,6 +430,29 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
     }
   };
 
+  const handleSelectColor = async (groupId: number, color: chrome.tabGroups.Color) => {
+    await setGroupColor(groupId, color);
+    setShowingColorPickerFor(null);
+  };
+
+  // Map Chrome color names to actual hex colors
+  const colorMap: Record<string, string> = {
+    'grey': '#9e9e9e',
+    'blue': '#4285f4',
+    'red': '#ea4335',
+    'yellow': '#fbbc04',
+    'green': '#34a853',
+    'pink': '#fb8d9e',
+    'purple': '#a142f4',
+    'cyan': '#13b9fd',
+    'orange': '#ff6d01'
+  };
+
+  const getColorValue = (colorName: unknown) => {
+    if (!colorName) return '#9e9e9e';
+    return colorMap[String(colorName)] || '#9e9e9e';
+  };
+
   const categories = Object.keys(categorizedResult);
   const colors = ['#ff4f4f', '#ffab04', '#0486ff', '#03b151', '#9b59b6', '#e67e22'];
   
@@ -425,11 +471,96 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
         <p className="text-[#717182]">{displayGroups.length > 0 ? displayGroups.length : categories.length} groups active</p>
       </div>
       
+      {/* Color picker modal - rendered outside the map to avoid positioning issues */}
+      {showingColorPickerFor !== null && (
+        <>
+          {/* Overlay */}
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 99998
+            }}
+            onClick={() => setShowingColorPickerFor(null)}
+          />
+          
+          {/* Color picker */}
+          <div 
+            className="color-picker-container" 
+            style={{ 
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+              padding: '16px',
+              border: '1px solid #e5e7eb',
+              zIndex: 99999,
+              minWidth: '280px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '12px', color: '#1f2937' }}>Select Color</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
+              {AVAILABLE_COLORS.map((color) => {
+                const colorValue = color as chrome.tabGroups.Color;
+                return (
+                  <button
+                    key={color}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Selecting color:', colorValue, 'for group:', showingColorPickerFor);
+                      handleSelectColor(showingColorPickerFor, colorValue);
+                    }}
+                    style={{ 
+                      width: '56px', 
+                      height: '56px', 
+                      borderRadius: '8px',
+                      border: '2px solid transparent',
+                      backgroundColor: colorMap[color],
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.border = '2px solid #9ca3af'}
+                    onMouseLeave={(e) => e.currentTarget.style.border = '2px solid transparent'}
+                    title={color}
+                  />
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setShowingColorPickerFor(null)}
+              style={{
+                marginTop: '8px',
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: '12px',
+                color: '#4b5563',
+                cursor: 'pointer',
+                border: 'none',
+                borderRadius: '4px',
+                backgroundColor: 'transparent'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
+
       {/* Render actual tab groups if available */}
       {displayGroups.length > 0 ? (
         displayGroups.map((group, index) => {
           const topPosition = 147 + (index * 76);
-          const color = colors[index % colors.length];
+          const colorValue = getColorValue(group.color);
           
           return (
             <div 
@@ -472,7 +603,7 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
               {/* Color indicator with tab count */}
               <div 
                 className="absolute rounded-[6px] left-[12px] top-[19px] w-[28px] h-[28px] flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: color }}
+                style={{ backgroundColor: colorValue }}
               >
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
                 <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[12px] text-center text-white z-10">
