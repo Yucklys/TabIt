@@ -372,7 +372,7 @@ function Group2() {
 function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categorizedResult }: { 
   selectedMode: string; 
   onModeChange: (mode: string) => void;
-  onConfirm: () => void;
+  onConfirm: (modifiedNames?: { [category: string]: string }, modifiedColors?: { [category: string]: chrome.tabGroups.Color }) => void;
   onCustomize: () => void;
   categorizedResult: { [category: string]: [number, ...number[]] };
 }) {
@@ -389,6 +389,9 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   
   // Track deleted/removed groups
   const [removedGroups, setRemovedGroups] = useState<string[]>([]);
+  
+  // Track renamed groups
+  const [renamedGroups, setRenamedGroups] = useState<{ [category: string]: string }>({});
 
   // Focus input when editing starts
   useEffect(() => {
@@ -452,16 +455,23 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
     }
   };
 
-  const handleSaveRename = async () => {
+  const handleSaveRename = async (_groupId: number, category: string) => {
     if (editingName.trim()) {
-      // Update local state - the actual rename happens when groups are created
+      // Store the renamed category
+      setRenamedGroups(prev => ({
+        ...prev,
+        [category]: editingName.trim()
+      }));
       setEditingGroupId(null);
       setEditingName("");
-      // In a real implementation, you might want to save this to a local state
     } else {
       setEditingGroupId(null);
       setEditingName("");
     }
+  };
+  
+  const getDisplayName = (category: string) => {
+    return renamedGroups[category] || category;
   };
 
   const handleCancelRename = () => {
@@ -469,9 +479,9 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
     setEditingName("");
   };
 
-  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+  const handleRenameKeyDown = (e: React.KeyboardEvent, groupId: number, category: string) => {
     if (e.key === 'Enter') {
-      handleSaveRename();
+      handleSaveRename(groupId, category);
     } else if (e.key === 'Escape') {
       handleCancelRename();
     }
@@ -493,6 +503,36 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
       return colorMap[String(selectedColors[groupId])];
     }
     return colors[index % colors.length];
+  };
+  
+  // Handle confirm button click - collect all modifications
+  const handleConfirmClick = () => {
+    console.log('handleConfirmClick called, collecting modifications...');
+    
+    // Build modified names map (category -> newName)
+    const modifiedNames: { [category: string]: string } = {};
+    visibleCategories.forEach((category) => {
+      if (renamedGroups[category]) {
+        modifiedNames[category] = renamedGroups[category];
+        console.log(`Renamed: ${category} -> ${renamedGroups[category]}`);
+      }
+    });
+    
+    // Build modified colors map (category -> chrome.tabGroups.Color)
+    const modifiedColors: { [category: string]: chrome.tabGroups.Color } = {};
+    visibleCategories.forEach((category, index) => {
+      const groupId = index + 1;
+      if (selectedColors[groupId]) {
+        modifiedColors[category] = selectedColors[groupId];
+        console.log(`Color changed: ${category} -> ${selectedColors[groupId]}`);
+      }
+    });
+    
+    console.log('Modified names:', modifiedNames);
+    console.log('Modified colors:', modifiedColors);
+    
+    // Call onConfirm with the modified data
+    onConfirm(modifiedNames, modifiedColors);
   };
 
   return (
@@ -598,15 +638,15 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
                         type="text"
                         value={editingName}
                         onChange={(e) => setEditingName(e.target.value)}
-                        onKeyDown={handleRenameKeyDown}
-                        onBlur={handleSaveRename}
+                        onKeyDown={(e) => handleRenameKeyDown(e, index + 1, category)}
+                        onBlur={() => handleSaveRename(index + 1, category)}
                         className="flex-1 font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 px-1 border border-blue-500 rounded focus:outline-none"
                         style={{ background: 'white' }}
                       />
                     ) : (
                       <>
                         <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
-                          Group {index + 1}: {category}
+                          Group {index + 1}: {getDisplayName(category)}
                         </p>
                         <GroupDropdown 
                           groupId={index + 1}
@@ -642,7 +682,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
       {/* Buttons - dynamically positioned after groups */}
       <div className="absolute left-0 w-full" style={{ top: `${147 + (visibleCategories.length * 76) + 20}px` }}>
         <div className="relative px-[33px] pb-[40px]">
-          <GroupingMode onClick={onConfirm} />
+          <GroupingMode onClick={handleConfirmClick} />
           <GroupingMode1 onClick={onCustomize} />
         </div>
       </div>
@@ -666,14 +706,17 @@ export default function Suggestion({
 }: { 
   selectedMode?: string; 
   onModeChange?: (mode: string) => void;
-  onConfirm?: () => void;
+  onConfirm?: (modifiedNames?: { [category: string]: string }, modifiedColors?: { [category: string]: chrome.tabGroups.Color }) => void;
   onCustomize?: () => void;
   categorizedResult?: { [category: string]: [number, ...number[]] };
 }) {
-  const handleConfirm = () => {
+  const handleConfirm = (
+    modifiedNames?: { [category: string]: string }, 
+    modifiedColors?: { [category: string]: chrome.tabGroups.Color }
+  ) => {
     console.log("Confirm Grouping clicked");
     if (onConfirm) {
-      onConfirm();
+      onConfirm(modifiedNames, modifiedColors);
     }
   };
 

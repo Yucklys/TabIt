@@ -115,13 +115,18 @@ export default function App() {
     await saveUserSettings({ selectedMode: mode as 'one-time' | 'smart' | 'aggressive' });
   };
 
-  const handleConfirmGrouping = async () => {
+  const handleConfirmGrouping = async (
+    modifiedNames?: { [category: string]: string },
+    modifiedColors?: { [category: string]: chrome.tabGroups.Color }
+  ) => {
     console.log("Confirm Grouping clicked, creating tab groups...");
+    console.log("Modified names received:", modifiedNames);
+    console.log("Modified colors received:", modifiedColors);
     
     if (categorizedResult) {
       try {
-        await createTabGroupsFromCategories(categorizedResult);
-        console.log("Tab groups created successfully");
+        await createTabGroupsFromCategories(categorizedResult, modifiedNames, modifiedColors);
+        console.log("Tab groups created successfully with modifications");
         setCurrentStep(7);
       } catch (error) {
         console.error("Error creating tab groups:", error);

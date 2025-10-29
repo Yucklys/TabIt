@@ -3,9 +3,13 @@ import { getTabIdsByIndices } from "./tabs";
 type TabGroup = chrome.tabGroups.TabGroup;
 
 /**
- * Create a tab group with given tab indices and name
+ * Create a tab group with given tab indices, name, and optional color
  */
-export async function createTabGroup(indice: [number, ...number[]], groupName: string): Promise<TabGroup | null> {
+export async function createTabGroup(
+  indice: [number, ...number[]], 
+  groupName: string, 
+  color?: chrome.tabGroups.Color
+): Promise<TabGroup | null> {
   try {
     // Validate input
     if (!indice || indice.length === 0) {
@@ -24,9 +28,16 @@ export async function createTabGroup(indice: [number, ...number[]], groupName: s
       const groupId = await chrome.tabs.group({
         tabIds,
       });
-      await chrome.tabGroups.update(groupId, {
+      
+      const updateParams: { title: string; color?: chrome.tabGroups.Color } = {
         title: groupName.trim()
-      });
+      };
+      
+      if (color) {
+        updateParams.color = color;
+      }
+      
+      await chrome.tabGroups.update(groupId, updateParams);
     
       return await chrome.tabGroups.get(groupId);
     }
@@ -38,15 +49,29 @@ export async function createTabGroup(indice: [number, ...number[]], groupName: s
 }
 
 /**
- * Create multiple tab groups from categorized tabs
+ * Create multiple tab groups from categorized tabs with custom names and colors
  */
-export async function createTabGroupsFromCategories(categorizedTabs: { [category: string]: [number, ...number[]] }): Promise<TabGroup[]> {
+export async function createTabGroupsFromCategories(
+  categorizedTabs: { [category: string]: [number, ...number[]] },
+  customNames?: { [category: string]: string },
+  customColors?: { [category: string]: chrome.tabGroups.Color }
+): Promise<TabGroup[]> {
   const createdGroups: TabGroup[] = [];
   
   try {
+    console.log('Creating tab groups with custom names:', customNames);
+    console.log('Creating tab groups with custom colors:', customColors);
+    
     for (const [category, tabIndices] of Object.entries(categorizedTabs)) {
       if (tabIndices.length > 0) {
-        const group = await createTabGroup(tabIndices, category);
+        // Use custom name if provided, otherwise use category
+        const groupName = customNames?.[category] || category;
+        // Use custom color if provided
+        const color = customColors?.[category];
+        
+        console.log(`Creating group: ${category} -> name: ${groupName}, color: ${color}`);
+        
+        const group = await createTabGroup(tabIndices, groupName, color);
         if (group) {
           createdGroups.push(group);
         }
