@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import svgPaths from "./svg-0ck11ki2su";
 import { ModeDropdown } from "../components/ModeDropdown";
 import { GroupDropdown } from "../components/GroupDropdown";
+import { AVAILABLE_COLORS } from "../api/recolorTabGroup";
+import { useState, useEffect, useRef } from "react";
 
 function Group() {
   return (
@@ -373,48 +376,254 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   onCustomize: () => void;
   categorizedResult: { [category: string]: [number, ...number[]] };
 }) {
-  const handleGroupAction = (groupId: number, action: string) => {
-    console.log(`Group ${groupId}: ${action}`);
+  // Inline rename state
+  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const editingInputRef = useRef<HTMLInputElement>(null);
+  
+  // Color picker state
+  const [showingColorPickerFor, setShowingColorPickerFor] = useState<number | null>(null);
+  
+  // Store selected colors for each group
+  const [selectedColors, setSelectedColors] = useState<{ [groupId: number]: chrome.tabGroups.Color }>({});
+  
+  // Track deleted/removed groups
+  const [removedGroups, setRemovedGroups] = useState<string[]>([]);
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editingGroupId && editingInputRef.current) {
+      editingInputRef.current.focus();
+      editingInputRef.current.select();
+    }
+  }, [editingGroupId]);
+
+  // Map Chrome color names to actual hex colors
+  const colorMap: Record<string, string> = {
+    'grey': '#9e9e9e',
+    'blue': '#4285f4',
+    'red': '#ea4335',
+    'yellow': '#fbbc04',
+    'green': '#34a853',
+    'pink': '#fb8d9e',
+    'purple': '#a142f4',
+    'cyan': '#13b9fd',
+    'orange': '#ff6d01'
   };
 
   const categories = Object.keys(categorizedResult);
   const colors = ['#ff4f4f', '#ffab04', '#0486ff', '#03b151', '#9b59b6', '#e67e22'];
+  
+  // Filter out removed groups
+  const visibleCategories = categories.filter(category => !removedGroups.includes(category));
+
+  const handleGroupAction = async (groupId: number, action: string, category: string) => {
+    console.log(`Group ${groupId}: ${action}`);
+    
+    try {
+      switch (action) {
+        case 'rename': {
+          // Start inline editing
+          setEditingGroupId(groupId);
+          setEditingName(category);
+          break;
+        }
+          
+        case 'change color': {
+          // Show color picker
+          setShowingColorPickerFor(groupId);
+          break;
+        }
+          
+        case 'ungroup': {
+          // Remove the group from suggestions
+          setRemovedGroups(prev => [...prev, category]);
+          // Also clear any selected color for this group
+          setSelectedColors(prev => {
+            const newColors = { ...prev };
+            delete newColors[groupId];
+            return newColors;
+          });
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('Error handling group action:', error);
+    }
+  };
+
+  const handleSaveRename = async () => {
+    if (editingName.trim()) {
+      // Update local state - the actual rename happens when groups are created
+      setEditingGroupId(null);
+      setEditingName("");
+      // In a real implementation, you might want to save this to a local state
+    } else {
+      setEditingGroupId(null);
+      setEditingName("");
+    }
+  };
+
+  const handleCancelRename = () => {
+    setEditingGroupId(null);
+    setEditingName("");
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveRename();
+    } else if (e.key === 'Escape') {
+      handleCancelRename();
+    }
+  };
+
+  const handleSelectColor = async (groupId: number, color: chrome.tabGroups.Color) => {
+    // Store color preference for display
+    setSelectedColors(prev => ({
+      ...prev,
+      [groupId]: color
+    }));
+    setShowingColorPickerFor(null);
+  };
+  
+  const getDisplayColor = (index: number) => {
+    // Use selected color if available, otherwise use default
+    const groupId = index + 1;
+    if (selectedColors[groupId]) {
+      return colorMap[String(selectedColors[groupId])];
+    }
+    return colors[index % colors.length];
+  };
 
   return (
     <div className="h-[589px] overflow-y-auto relative shrink-0 w-[420px]" data-name="Free_form">
       <Frame />
       <Paragraph1 />
       
+      {/* Color picker modal */}
+      {showingColorPickerFor !== null && (
+        <>
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              zIndex: 99998
+            }}
+            onClick={() => setShowingColorPickerFor(null)}
+          />
+          
+          <div 
+            className="color-picker-container" 
+            style={{ 
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
+              padding: '16px',
+              border: '1px solid #e5e7eb',
+              zIndex: 99999,
+              minWidth: '280px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ fontSize: '14px', fontWeight: '500', marginBottom: '12px', color: '#1f2937' }}>Select Color</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
+              {AVAILABLE_COLORS.map((color) => {
+                const colorValue = color as chrome.tabGroups.Color;
+                return (
+                  <button
+                    key={color}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelectColor(showingColorPickerFor, colorValue);
+                    }}
+                    style={{ 
+                      width: '56px', 
+                      height: '56px', 
+                      borderRadius: '8px',
+                      border: '2px solid transparent',
+                      backgroundColor: colorMap[color],
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.border = '2px solid #9ca3af'}
+                    onMouseLeave={(e) => e.currentTarget.style.border = '2px solid transparent'}
+                    title={color}
+                  />
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setShowingColorPickerFor(null)}
+              style={{
+                marginTop: '8px',
+                width: '100%',
+                padding: '8px 12px',
+                fontSize: '12px',
+                color: '#4b5563',
+                cursor: 'pointer',
+                border: 'none',
+                borderRadius: '4px',
+                backgroundColor: 'transparent'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
+      
       {/* Dynamic group rendering */}
-      {categories.length > 0 ? (
-        categories.map((category, index) => {
+      {visibleCategories.length > 0 ? (
+        visibleCategories.map((category, index) => {
           const tabCount = categorizedResult[category].length;
-          const topPosition = 147 + (index * 76); // Space groups vertically
-          const color = colors[index % colors.length];
+          const topPosition = 147 + (index * 76);
           
           return (
             <div key={category} className="absolute" style={{ top: `${topPosition}px`, left: '33px', width: '354px' }}>
               <div className="absolute bg-white box-border content-stretch flex flex-col h-[58px] items-center left-0 pb-[0.8px] pl-[12.8px] pr-[0.8px] pt-[12.8px] rounded-[14px] top-0 w-[354px]">
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[14px]" />
-                <div className="absolute content-stretch flex flex-col gap-[2px] h-[22px] items-start left-[35.2px] top-[19px] w-[305px]">
+                <div className="absolute content-stretch flex flex-col gap-[2px] h-[22px] items-start left-[52px] top-[19px] w-[305px]">
                   <div className="h-[20px] relative w-full flex items-center justify-between pr-[30px]">
-                    <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
-                      Group {index + 1}: {category}
-                    </p>
-                    <GroupDropdown 
-                      groupId={index + 1}
-                      onRename={() => handleGroupAction(index + 1, "rename")}
-                      onChangeColor={() => handleGroupAction(index + 1, "change color")}
-                      onUngroup={() => handleGroupAction(index + 1, "ungroup")}
-                      className=""
-                    />
+                    {editingGroupId === index + 1 ? (
+                      <input
+                        ref={editingInputRef}
+                        type="text"
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onKeyDown={handleRenameKeyDown}
+                        onBlur={handleSaveRename}
+                        className="flex-1 font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 px-1 border border-blue-500 rounded focus:outline-none"
+                        style={{ background: 'white' }}
+                      />
+                    ) : (
+                      <>
+                        <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
+                          Group {index + 1}: {category}
+                        </p>
+                        <GroupDropdown 
+                          groupId={index + 1}
+                          onRename={() => handleGroupAction(index + 1, "rename", category)}
+                          onChangeColor={() => handleGroupAction(index + 1, "change color", category)}
+                          onUngroup={() => handleGroupAction(index + 1, "ungroup", category)}
+                          className=""
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
               {/* Color indicator with tab count */}
               <div 
-                className="absolute rounded-[6px] left-[12px] top-[19px] w-[20px] h-[20px] flex items-center justify-center"
-                style={{ backgroundColor: color }}
+                className="absolute rounded-[6px] left-[12px] top-[19px] w-[28px] h-[28px] flex items-center justify-center overflow-hidden"
+                style={{ backgroundColor: getDisplayColor(index) }}
               >
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
                 <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[12px] text-center text-white z-10">
@@ -431,7 +640,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
       )}
       
       {/* Buttons - dynamically positioned after groups */}
-      <div className="absolute left-0 w-full" style={{ top: `${147 + (categories.length * 76) + 20}px` }}>
+      <div className="absolute left-0 w-full" style={{ top: `${147 + (visibleCategories.length * 76) + 20}px` }}>
         <div className="relative px-[33px] pb-[40px]">
           <GroupingMode onClick={onConfirm} />
           <GroupingMode1 onClick={onCustomize} />
