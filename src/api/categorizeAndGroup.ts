@@ -29,7 +29,7 @@ export async function categorizeAndGroup(
     }
   });
 
-  const categorizedTabs = await categorizeTabsBatch(validTabInfoList);
+  const categorizedTabs = await categorizeTabsBatch(validTabInfoList, existingGroups);
   
   const categorizedResult: { [category: string]: [number, ...number[]] } = {};
   for (const group of categorizedTabs) {

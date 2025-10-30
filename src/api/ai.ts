@@ -33,7 +33,7 @@ export async function prompt(input: string): Promise<string> {
 /**
  * Batch categorize multiple tabs at once
  */
-export async function categorizeTabsBatch(tabs: Array<{index: number, title: string, url: string}>): Promise<Array<{CategoryName: string, indices: [number, ...number[]]}>> {
+export async function categorizeTabsBatch(tabs: Array<{ index: number; title: string; url: string; }>, existingGroups: string[]): Promise<Array<{CategoryName: string, indices: [number, ...number[]]}>> {
   const tabsInfo = tabs.map((tab) => `${tab.index}: ${tab.title} (${tab.url})`).join('\n');
   
   const customPrompt = await getCustomPrompt();
@@ -70,9 +70,12 @@ PRIORITIZE USING THESE CATEGORY NAMES when tabs match them. For example:
 - If user provided "youtube" and there are YouTube tabs, use "youtube" or "Youtube"category ( the tab name is depends on AI)
 Use these user-provided names instead of creating your own like "Entertainment" or "AI Tools".
 Only create your own categories if tabs don't match any user-provided category.
-- don't have duplicate categories, need check there have any duplicate categories before make
-
 `;
+  }
+
+  if (existingGroups.length > 0) {
+    promptText += `EXISTING CATEGORIES:
+${existingGroups.join(', ')}`
   }
   
   // Main instruction

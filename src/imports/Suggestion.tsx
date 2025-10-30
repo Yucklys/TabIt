@@ -282,37 +282,45 @@ function Card5() {
   );
 }
 
-function GroupingMode({ onClick }: { onClick: () => void }) {
+function IconParkRight() {
+  return (
+    <div className="absolute left-[318px] size-[24px] top-[12px]" data-name="icon-park:right">
+      <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 24 24">
+        <path d="M9 6L15 12L9 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+const GroupingMode = ({ onClick, style }: { onClick: () => void; style?: React.CSSProperties }) => {
   return (
     <button
-      onClick={onClick}
-      className="relative bg-[#4285f4] h-[49px] w-full rounded-[200px] cursor-pointer hover:bg-[#3b78e7] active:bg-[#3367d6] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#0486ff] focus:ring-offset-2 mb-[10px]"
+      className="absolute bg-[#4285f4] h-[49px] left-[33px] w-[354px] rounded-[200px] cursor-pointer hover:bg-[#3b78e7] active:bg-[#3367d6] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#0486ff] focus:ring-offset-2 mb-[10px]"
       data-name="Grouping Mode"
-      aria-label="Confirm grouping"
+      onClick={onClick}
       type="button"
+      style={style}
     >
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.28)] border-solid inset-0 pointer-events-none rounded-[200px]" />
-      <div className="absolute left-[15px] size-[24px] top-[12px]">
-        <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 24 24">
-          <path d="M9 6L15 12L9 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-      <p className="font-['Arial:Regular',_sans-serif] leading-[20px] text-center not-italic text-[14px] text-nowrap text-white whitespace-pre">Confirm Grouping</p>
+      <IconParkRight />
+      <p className="absolute font-['Arial:Regular',_sans-serif] leading-[20px] left-[calc(50%-55px)] not-italic text-[14px] text-nowrap text-white top-[16px] whitespace-pre">Confirm Grouping</p>
     </button>
   );
 }
 
-function GroupingMode1({ onClick }: { onClick: () => void }) {
+
+function GroupingMode1({ onClick, style }: { onClick: () => void; style?: React.CSSProperties }) {
   return (
     <button
       onClick={onClick}
-      className="relative bg-[rgba(236,236,240,0.5)] h-[35px] w-full rounded-[200px] cursor-pointer hover:bg-[rgba(236,236,240,0.7)] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#717182] focus:ring-offset-2"
+      className="absolute bg-[rgba(236,236,240,0.5)] h-[35px] left-[33px] rounded-[200px] w-[354px] cursor-pointer hover:bg-[rgba(236,236,240,0.7)] transition-colors duration-200"
       data-name="Grouping Mode"
       aria-label="Customize grouping"
       type="button"
+      style={style}
     >
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.28)] border-solid inset-0 pointer-events-none rounded-[200px]" />
-      <p className="font-['Arial:Regular',_sans-serif] leading-[20px] text-center not-italic text-[14px] text-neutral-950 text-nowrap whitespace-pre">Customize</p>
+      <p className="absolute font-['Arial:Regular',_sans-serif] leading-[20px] left-[calc(50%-33px)] not-italic text-[14px] text-neutral-950 text-nowrap top-[7px] whitespace-pre">Customize</p>
     </button>
   );
 }
@@ -415,10 +423,10 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   };
 
   const categories = Object.keys(categorizedResult);
-  const colors = ['#ff4f4f', '#ffab04', '#0486ff', '#03b151', '#9b59b6', '#e67e22'];
   
   // Filter out removed groups
   const visibleCategories = categories.filter(category => !removedGroups.includes(category));
+  const buttonTop = 147 + (visibleCategories.length * 76) + 20;
 
   const handleGroupAction = async (groupId: number, action: string, category: string) => {
     console.log(`Group ${groupId}: ${action}`);
@@ -502,7 +510,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
     if (selectedColors[groupId]) {
       return colorMap[String(selectedColors[groupId])];
     }
-    return colors[index % colors.length];
+    return colorMap['grey'];
   };
   
   // Handle confirm button click - collect all modifications
@@ -536,7 +544,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   };
 
   return (
-    <div className="h-[589px] overflow-y-auto relative shrink-0 w-[420px]" data-name="Free_form">
+    <div className="h-[589px] relative shrink-0 w-[420px]" data-name="Free_form">
       <Frame />
       <Paragraph1 />
       
@@ -680,12 +688,8 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
       )}
       
       {/* Buttons - dynamically positioned after groups */}
-      <div className="absolute left-0 w-full" style={{ top: `${147 + (visibleCategories.length * 76) + 20}px` }}>
-        <div className="relative px-[33px] pb-[40px]">
-          <GroupingMode onClick={handleConfirmClick} />
-          <GroupingMode1 onClick={onCustomize} />
-        </div>
-      </div>
+      <GroupingMode onClick={handleConfirmClick} style={{ top: `${buttonTop}px` }} />
+      <GroupingMode1 onClick={onCustomize} style={{ top: `${buttonTop + 67}px` }} />
       
       <Group2 />
       <ModeDropdown 
@@ -728,7 +732,7 @@ export default function Suggestion({
   };
 
   return (
-    <div className="bg-white relative rounded-[16px] size-full overflow-hidden" data-name="suggestion">
+    <div className="bg-white relative rounded-[16px] size-full" data-name="suggestion">
       <FreeForm 
         selectedMode={selectedMode}
         onModeChange={onModeChange || (() => {})}

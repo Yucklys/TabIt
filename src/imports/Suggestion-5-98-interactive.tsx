@@ -464,7 +464,7 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
   const buttonsTop = 147 + (numGroups * 76) + 20; // After all groups + margin
 
   return (
-    <div className="h-[589px] overflow-y-auto relative shrink-0 w-[420px]" data-name="Free_form">
+    <div className="h-[589px] relative shrink-0 w-[420px]" data-name="Free_form">
       {/* Header - fixed */}
       <div className="absolute font-['Arial:Regular',_sans-serif] leading-[20px] left-[47px] not-italic text-[14px] text-neutral-950 top-[83px] w-[318px]">
         <p className="mb-0">Tab Groups</p>

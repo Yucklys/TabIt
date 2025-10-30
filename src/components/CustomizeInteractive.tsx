@@ -3,7 +3,7 @@ import svgPaths from "../imports/svg-8cbxbja4km";
 import { ModeDropdown } from "./ModeDropdown";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 import { Slider } from "./ui/slider";
-import { setCustomPrompt, setCustomGroups, setTabRange as saveTabRange, getTabRange } from "../api/storage";
+import { setCustomPrompt, setCustomGroups, setTabRange as saveTabRange, getTabRange, getCustomPrompt, getCustomGroups } from "../api/storage";
 
 interface Tag {
   id: string;
@@ -43,31 +43,26 @@ export default function CustomizeInteractive({
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        // Import storage functions
-        const storage = await import('../api/storage');
-        const getCustomPrompt = storage.getCustomPrompt;
-        const getCustomGroups = storage.getCustomGroups;
-        
         // Load saved data
         const savedPrompt = await getCustomPrompt();
         const savedGroups = await getCustomGroups();
         const savedTabRange = await getTabRange();
-        
+
         console.log('Loaded from storage:');
         console.log('- Saved prompt:', savedPrompt);
         console.log('- Saved groups:', savedGroups);
         console.log('- Saved tab range:', savedTabRange);
-        
+
         // Set additional rules
         if (savedPrompt) {
           setAdditionalRules(savedPrompt);
         }
-        
+
         // Set tab range
         if (savedTabRange) {
           setTabRange(savedTabRange);
         }
-        
+
         // Set active tags based on saved groups
         if (savedGroups && savedGroups.length > 0) {
           setTags(prevTags => {
@@ -76,23 +71,23 @@ export default function CustomizeInteractive({
               ...tag,
               active: savedGroups.includes(tag.label)
             }));
-            
+
             // Find new groups that don't exist in default tags
             const existingLabels = prevTags.map(t => t.label);
             const newGroups = savedGroups.filter(label => !existingLabels.includes(label));
-            
+
             // Add new groups
             const newTags = newGroups.map((groupLabel, index) => ({
               id: `tag-${Date.now()}-${index}`,
               label: groupLabel,
               active: true,
             }));
-            
+
             // Add new tags to selection order
             if (newTags.length > 0) {
               setSelectionOrder(prev => [...newTags.map(t => t.id), ...prev]);
             }
-            
+
             return [...newTags, ...updatedTags];
           });
         }
@@ -100,7 +95,7 @@ export default function CustomizeInteractive({
         console.error('Failed to load settings:', error);
       }
     };
-    
+
     loadSettings();
   }, []);
 
@@ -113,7 +108,7 @@ export default function CustomizeInteractive({
     .filter((id) => tags.find((t) => t.id === id && t.active))
     .map((id) => tags.find((t) => t.id === id)!)
     .filter(Boolean);
-  
+
   const maxDisplayTags = orderedSelectedTags.length > 0 && orderedSelectedTags[0].label.length > 10 ? 2 : 3;
   const topDisplayTags = orderedSelectedTags.slice(0, maxDisplayTags);
 
@@ -169,47 +164,47 @@ export default function CustomizeInteractive({
     const timer = setTimeout(() => {
       setIsInitialLoadComplete(true);
     }, 1000); // Wait 1 second after mount
-    
+
     return () => clearTimeout(timer);
   }, []);
 
   // Auto-save tags to storage whenever tags change (after initial load)
   useEffect(() => {
     if (!isInitialLoadComplete) return;
-    
+
     const saveTags = async () => {
       const activeTagLabels = tags.filter(t => t.active).map(t => t.label);
       await setCustomGroups(activeTagLabels);
       console.log('Auto-saved tags to storage:', activeTagLabels);
     };
-    
+
     saveTags();
   }, [tags, isInitialLoadComplete]);
 
   // Auto-save additional rules to storage whenever it changes (after initial load)
   useEffect(() => {
     if (!isInitialLoadComplete) return;
-    
+
     const saveRules = async () => {
       await setCustomPrompt(additionalRules);
       if (additionalRules) {
         console.log('Auto-saved additional rules to storage:', additionalRules);
       }
     };
-    
+
     saveRules();
   }, [additionalRules, isInitialLoadComplete]);
 
   // Auto-save tab range to storage whenever it changes (after initial load)
   useEffect(() => {
     if (!isInitialLoadComplete) return;
-    
-  const saveRange = async () => {
-    const range: [number, number] = [tabRange[0], tabRange[1]];
-    await saveTabRange(range);
-    console.log('Auto-saved tab range to storage:', range);
-  };
-    
+
+    const saveRange = async () => {
+      const range: [number, number] = [tabRange[0], tabRange[1]];
+      await saveTabRange(range);
+      console.log('Auto-saved tab range to storage:', range);
+    };
+
     saveRange();
   }, [tabRange, isInitialLoadComplete]);
 
@@ -217,17 +212,17 @@ export default function CustomizeInteractive({
   const handleGetStarted = async () => {
     // Get all active tags (selected categories)
     const selectedCategories = tags.filter(t => t.active).map(t => t.label);
-    
+
     // Save the additional rules (custom prompt) to storage
     await setCustomPrompt(additionalRules);
-    
+
     // Save the selected categories to storage
     await setCustomGroups(selectedCategories);
-    
+
     console.log('Saved to storage:');
     console.log('- Additional Rules:', additionalRules);
     console.log('- Selected Categories:', selectedCategories);
-    
+
     // Call the onNext callback
     if (onNext) {
       onNext();
@@ -346,7 +341,7 @@ export default function CustomizeInteractive({
                   key={tag.id}
                   className="content-stretch flex gap-[9px] items-center hover:opacity-80 relative group"
                 >
-                  <div 
+                  <div
                     className="cursor-pointer flex gap-[9px] items-center"
                     onClick={() => toggleTag(tag.id)}
                   >
@@ -362,7 +357,7 @@ export default function CustomizeInteractive({
                       title="Delete this category"
                     >
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M9 3L3 9M3 3L9 9" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
+                        <path d="M9 3L3 9M3 3L9 9" stroke="#666" strokeWidth="1.5" strokeLinecap="round" />
                       </svg>
                     </button>
                   )}
@@ -374,7 +369,7 @@ export default function CustomizeInteractive({
                   key={tag.id}
                   className="content-stretch flex gap-[9px] items-center hover:opacity-80 relative group"
                 >
-                  <div 
+                  <div
                     className="cursor-pointer flex gap-[9px] items-center"
                     onClick={() => toggleTag(tag.id)}
                   >
@@ -390,7 +385,7 @@ export default function CustomizeInteractive({
                       title="Delete this category"
                     >
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                        <path d="M9 3L3 9M3 3L9 9" stroke="#666" strokeWidth="1.5" strokeLinecap="round"/>
+                        <path d="M9 3L3 9M3 3L9 9" stroke="#666" strokeWidth="1.5" strokeLinecap="round" />
                       </svg>
                     </button>
                   )}
@@ -429,7 +424,7 @@ export default function CustomizeInteractive({
 
       {/* Mode Dropdown */}
       <div className="absolute left-[106px] top-[20px]">
-        <ModeDropdown selectedMode={selectedMode} onModeChange={onModeChange || (() => {})} />
+        <ModeDropdown selectedMode={selectedMode} onModeChange={onModeChange || (() => { })} />
       </div>
 
       {/* Tag Selector */}
@@ -582,7 +577,7 @@ function GridiconsDropdown1() {
 
 function MiEnter({ onClick }: { onClick?: () => void }) {
   return (
-    <div 
+    <div
       className="absolute left-[314px] size-[13px] top-[61.01px] cursor-pointer hover:opacity-70 transition-opacity"
       onClick={onClick}
     >
