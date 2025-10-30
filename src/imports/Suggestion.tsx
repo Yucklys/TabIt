@@ -395,15 +395,17 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   // Store selected colors for each group
   const [selectedColors, setSelectedColors] = useState<{ [groupId: number]: chrome.tabGroups.Color }>({});
 
-  // Function to initialize random colors for groups
-  const initializeRandomColors = (categories: string[]) => {
+  // Function to initialize ordered colors for groups
+  const initializeOrderedColors = (categories: string[]) => {
     const initialColors: { [groupId: number]: chrome.tabGroups.Color } = {};
 
     categories.forEach((_, index) => {
       const groupId = index + 1;
       if (!selectedColors[groupId]) {
-        const randomColor = AVAILABLE_COLORS[Math.floor(Math.random() * AVAILABLE_COLORS.length)] as chrome.tabGroups.Color;
-        initialColors[groupId] = randomColor;
+        // Use colors in order, cycling through the array
+        const colorIndex = index % AVAILABLE_COLORS.length;
+        const orderedColor = AVAILABLE_COLORS[colorIndex] as chrome.tabGroups.Color;
+        initialColors[groupId] = orderedColor;
       }
     });
 
@@ -444,8 +446,11 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   // Filter out removed groups
   const visibleCategories = categories.filter(category => !removedGroups.includes(category));
 
-  // Initialize random colors for new groups
-  initializeRandomColors(visibleCategories);
+  // Calculate max tabs across all groups for scaling
+  const maxTabs = Math.max(1, ...visibleCategories.map(category => categorizedResult[category].length));
+
+  // Initialize ordered colors for new groups
+  initializeOrderedColors(visibleCategories);
 
   const buttonTop = 147 + (visibleCategories.length * 76) + 20;
 
@@ -532,6 +537,19 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
       return colorMap[String(selectedColors[groupId])];
     }
     return colorMap['grey'];
+  };
+
+  // Function to calculate height based on tab count
+  const calculateTabCountBoxHeight = (tabCount: number, maxTabCount: number) => {
+    const minHeight = 22;
+    const maxHeight = 40;
+
+    // If all groups have the same number of tabs, use minimum height
+    if (maxTabCount === 1) return minHeight;
+
+    // Scale height based on tab count, ensuring it doesn't exceed maxHeight
+    const scaledHeight = minHeight + ((tabCount - 1) / (maxTabCount - 1)) * (maxHeight - minHeight);
+    return Math.min(maxHeight, Math.max(minHeight, scaledHeight));
   };
 
   // Handle confirm button click - collect all modifications
@@ -691,8 +709,12 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
               </div>
               {/* Color indicator with tab count */}
               <div
-                className="absolute rounded-[6px] left-[12px] top-[19px] w-[28px] h-[28px] flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: getDisplayColor(index) }}
+                className="absolute rounded-[6px] left-[12px] w-[28px] flex items-center justify-center overflow-hidden"
+                style={{
+                  backgroundColor: getDisplayColor(index),
+                  height: `${calculateTabCountBoxHeight(tabCount, maxTabs)}px`,
+                  top: `${10 + (40 - calculateTabCountBoxHeight(tabCount, maxTabs)) / 2}px` // Center vertically within available space
+                }}
               >
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
                 <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[12px] text-center text-white z-10">

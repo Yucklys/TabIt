@@ -459,6 +459,24 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
   // Use actual groups if available
   const displayGroups = actualGroups.length > 0 ? actualGroups : [];
 
+  // Calculate max tabs for dynamic height scaling
+  const maxTabs = displayGroups.length > 0 
+    ? Math.max(1, ...displayGroups.map(group => tabCounts[group.id] || 0))
+    : Math.max(1, ...categories.map(category => categorizedResult[category].length));
+
+  // Function to calculate height based on tab count
+  const calculateTabCountBoxHeight = (tabCount: number, maxTabCount: number) => {
+    const minHeight = 22;
+    const maxHeight = 40;
+
+    // If all groups have the same number of tabs, use minimum height
+    if (maxTabCount === 1) return minHeight;
+
+    // Scale height based on tab count, ensuring it doesn't exceed maxHeight
+    const scaledHeight = minHeight + ((tabCount - 1) / (maxTabCount - 1)) * (maxHeight - minHeight);
+    return Math.min(maxHeight, Math.max(minHeight, scaledHeight));
+  };
+
   // Calculate button position based on number of groups
   const numGroups = displayGroups.length > 0 ? displayGroups.length : categories.length;
   const buttonsTop = 147 + (numGroups * 76) + 20; // After all groups + margin
@@ -602,8 +620,12 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
               </div>
               {/* Color indicator with tab count */}
               <div 
-                className="absolute rounded-[6px] left-[12px] top-[19px] w-[28px] h-[28px] flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: colorValue }}
+                className="absolute rounded-[6px] left-[12px] w-[28px] flex items-center justify-center overflow-hidden"
+                style={{ 
+                  backgroundColor: colorValue,
+                  height: `${calculateTabCountBoxHeight(tabCounts[group.id] || 0, maxTabs)}px`,
+                  top: `${10 + (40 - calculateTabCountBoxHeight(tabCounts[group.id] || 0, maxTabs)) / 2}px` // Center vertically within available space
+                }}
               >
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
                 <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[12px] text-center text-white z-10">
@@ -640,8 +662,12 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
               </div>
               {/* Color indicator with tab count */}
               <div 
-                className="absolute rounded-[6px] left-[12px] top-[19px] w-[28px] h-[28px] flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: color }}
+                className="absolute rounded-[6px] left-[12px] w-[28px] flex items-center justify-center overflow-hidden"
+                style={{ 
+                  backgroundColor: color,
+                  height: `${calculateTabCountBoxHeight(tabCount, maxTabs)}px`,
+                  top: `${10 + (40 - calculateTabCountBoxHeight(tabCount, maxTabs)) / 2}px` // Center vertically within available space
+                }}
               >
                 <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
                 <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[12px] text-center text-white z-10">
