@@ -5,6 +5,7 @@ let globalSession: LanguageModel | null = null;
 export async function initSession() {
   if (!globalSession) {
     globalSession = await LanguageModel.create({
+      expectedOutputs: [{ type: "text", languages: ['en'] }],
       monitor(m) {
         m.addEventListener('downloadprogress', (e) => {
           console.log(`Downloaded ${e.loaded * 100}%`);
