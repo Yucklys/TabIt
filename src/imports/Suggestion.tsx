@@ -59,7 +59,7 @@ function Heading({ onRename, onChangeColor, onUngroup }: {
   return (
     <div className="h-[20px] relative shrink-0 w-full flex items-center justify-between pr-[30px]" data-name="Heading 5">
       <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[14px] text-neutral-950 text-nowrap whitespace-pre">{`Group 1: Entertainment `}</p>
-      <GroupDropdown 
+      <GroupDropdown
         groupId={1}
         onRename={onRename}
         onChangeColor={onChangeColor}
@@ -135,7 +135,7 @@ function Container2({ onRename, onChangeColor, onUngroup }: {
     <div className="absolute content-stretch flex flex-col gap-[2px] h-[20px] items-start left-[35.2px] top-[14.2px] w-[305px]" data-name="Container">
       <div className="h-[20px] relative w-full flex items-center justify-between pr-[30px]">
         <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[14px] text-neutral-950 text-nowrap whitespace-pre">Group 2: News</p>
-        <GroupDropdown 
+        <GroupDropdown
           groupId={2}
           onRename={onRename}
           onChangeColor={onChangeColor}
@@ -194,7 +194,7 @@ function Heading1({ onRename, onChangeColor, onUngroup }: {
   return (
     <div className="h-[20px] relative shrink-0 w-full flex items-center justify-between pr-[30px]" data-name="Heading 5">
       <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[14px] text-neutral-950 text-nowrap whitespace-pre">Group 3: Shopping</p>
-      <GroupDropdown 
+      <GroupDropdown
         groupId={3}
         onRename={onRename}
         onChangeColor={onChangeColor}
@@ -377,8 +377,8 @@ function Group2() {
   );
 }
 
-function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categorizedResult }: { 
-  selectedMode: string; 
+function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categorizedResult }: {
+  selectedMode: string;
   onModeChange: (mode: string) => void;
   onConfirm: (modifiedNames?: { [category: string]: string }, modifiedColors?: { [category: string]: chrome.tabGroups.Color }) => void;
   onCustomize: () => void;
@@ -388,16 +388,33 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState("");
   const editingInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Color picker state
   const [showingColorPickerFor, setShowingColorPickerFor] = useState<number | null>(null);
-  
+
   // Store selected colors for each group
   const [selectedColors, setSelectedColors] = useState<{ [groupId: number]: chrome.tabGroups.Color }>({});
-  
+
+  // Function to initialize random colors for groups
+  const initializeRandomColors = (categories: string[]) => {
+    const initialColors: { [groupId: number]: chrome.tabGroups.Color } = {};
+
+    categories.forEach((_, index) => {
+      const groupId = index + 1;
+      if (!selectedColors[groupId]) {
+        const randomColor = AVAILABLE_COLORS[Math.floor(Math.random() * AVAILABLE_COLORS.length)] as chrome.tabGroups.Color;
+        initialColors[groupId] = randomColor;
+      }
+    });
+
+    if (Object.keys(initialColors).length > 0) {
+      setSelectedColors(prev => ({ ...prev, ...initialColors }));
+    }
+  };
+
   // Track deleted/removed groups
   const [removedGroups, setRemovedGroups] = useState<string[]>([]);
-  
+
   // Track renamed groups
   const [renamedGroups, setRenamedGroups] = useState<{ [category: string]: string }>({});
 
@@ -423,14 +440,18 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   };
 
   const categories = Object.keys(categorizedResult);
-  
+
   // Filter out removed groups
   const visibleCategories = categories.filter(category => !removedGroups.includes(category));
+
+  // Initialize random colors for new groups
+  initializeRandomColors(visibleCategories);
+
   const buttonTop = 147 + (visibleCategories.length * 76) + 20;
 
   const handleGroupAction = async (groupId: number, action: string, category: string) => {
     console.log(`Group ${groupId}: ${action}`);
-    
+
     try {
       switch (action) {
         case 'rename': {
@@ -439,13 +460,13 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
           setEditingName(category);
           break;
         }
-          
+
         case 'change color': {
           // Show color picker
           setShowingColorPickerFor(groupId);
           break;
         }
-          
+
         case 'ungroup': {
           // Remove the group from suggestions
           setRemovedGroups(prev => [...prev, category]);
@@ -477,7 +498,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
       setEditingName("");
     }
   };
-  
+
   const getDisplayName = (category: string) => {
     return renamedGroups[category] || category;
   };
@@ -503,20 +524,20 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
     }));
     setShowingColorPickerFor(null);
   };
-  
+
   const getDisplayColor = (index: number) => {
-    // Use selected color if available, otherwise use default
+    // Use selected color if available, otherwise use grey as fallback
     const groupId = index + 1;
     if (selectedColors[groupId]) {
       return colorMap[String(selectedColors[groupId])];
     }
     return colorMap['grey'];
   };
-  
+
   // Handle confirm button click - collect all modifications
   const handleConfirmClick = () => {
     console.log('handleConfirmClick called, collecting modifications...');
-    
+
     // Build modified names map (category -> newName)
     const modifiedNames: { [category: string]: string } = {};
     visibleCategories.forEach((category) => {
@@ -525,7 +546,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
         console.log(`Renamed: ${category} -> ${renamedGroups[category]}`);
       }
     });
-    
+
     // Build modified colors map (category -> chrome.tabGroups.Color)
     const modifiedColors: { [category: string]: chrome.tabGroups.Color } = {};
     visibleCategories.forEach((category, index) => {
@@ -535,10 +556,10 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
         console.log(`Color changed: ${category} -> ${selectedColors[groupId]}`);
       }
     });
-    
+
     console.log('Modified names:', modifiedNames);
     console.log('Modified colors:', modifiedColors);
-    
+
     // Call onConfirm with the modified data
     onConfirm(modifiedNames, modifiedColors);
   };
@@ -547,11 +568,11 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
     <div className="h-[589px] relative shrink-0 w-[420px]" data-name="Free_form">
       <Frame />
       <Paragraph1 />
-      
+
       {/* Color picker modal */}
       {showingColorPickerFor !== null && (
         <>
-          <div 
+          <div
             style={{
               position: 'fixed',
               top: 0,
@@ -563,10 +584,10 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
             }}
             onClick={() => setShowingColorPickerFor(null)}
           />
-          
-          <div 
-            className="color-picker-container" 
-            style={{ 
+
+          <div
+            className="color-picker-container"
+            style={{
               position: 'fixed',
               top: '50%',
               left: '50%',
@@ -592,9 +613,9 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
                       e.stopPropagation();
                       handleSelectColor(showingColorPickerFor, colorValue);
                     }}
-                    style={{ 
-                      width: '56px', 
-                      height: '56px', 
+                    style={{
+                      width: '56px',
+                      height: '56px',
                       borderRadius: '8px',
                       border: '2px solid transparent',
                       backgroundColor: colorMap[color],
@@ -627,13 +648,13 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
           </div>
         </>
       )}
-      
+
       {/* Dynamic group rendering */}
       {visibleCategories.length > 0 ? (
         visibleCategories.map((category, index) => {
           const tabCount = categorizedResult[category].length;
           const topPosition = 147 + (index * 76);
-          
+
           return (
             <div key={category} className="absolute" style={{ top: `${topPosition}px`, left: '33px', width: '354px' }}>
               <div className="absolute bg-white box-border content-stretch flex flex-col h-[58px] items-center left-0 pb-[0.8px] pl-[12.8px] pr-[0.8px] pt-[12.8px] rounded-[14px] top-0 w-[354px]">
@@ -656,7 +677,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
                         <p className="font-['Arial:Regular',_sans-serif] leading-[20px] not-italic text-[15px] text-neutral-950 text-nowrap whitespace-pre">
                           Group {index + 1}: {getDisplayName(category)}
                         </p>
-                        <GroupDropdown 
+                        <GroupDropdown
                           groupId={index + 1}
                           onRename={() => handleGroupAction(index + 1, "rename", category)}
                           onChangeColor={() => handleGroupAction(index + 1, "change color", category)}
@@ -669,7 +690,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
                 </div>
               </div>
               {/* Color indicator with tab count */}
-              <div 
+              <div
                 className="absolute rounded-[6px] left-[12px] top-[19px] w-[28px] h-[28px] flex items-center justify-center overflow-hidden"
                 style={{ backgroundColor: getDisplayColor(index) }}
               >
@@ -686,13 +707,13 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
           No groups found
         </div>
       )}
-      
+
       {/* Buttons - dynamically positioned after groups */}
       <GroupingMode onClick={handleConfirmClick} style={{ top: `${buttonTop}px` }} />
       <GroupingMode1 onClick={onCustomize} style={{ top: `${buttonTop + 67}px` }} />
-      
+
       <Group2 />
-      <ModeDropdown 
+      <ModeDropdown
         selectedMode={selectedMode}
         onModeChange={onModeChange}
         className="absolute left-[106px] top-[20px]"
@@ -701,21 +722,21 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
   );
 }
 
-export default function Suggestion({ 
-  selectedMode = "smart", 
-  onModeChange, 
-  onConfirm, 
+export default function Suggestion({
+  selectedMode = "smart",
+  onModeChange,
+  onConfirm,
   onCustomize,
   categorizedResult = {}
-}: { 
-  selectedMode?: string; 
+}: {
+  selectedMode?: string;
   onModeChange?: (mode: string) => void;
   onConfirm?: (modifiedNames?: { [category: string]: string }, modifiedColors?: { [category: string]: chrome.tabGroups.Color }) => void;
   onCustomize?: () => void;
   categorizedResult?: { [category: string]: [number, ...number[]] };
 }) {
   const handleConfirm = (
-    modifiedNames?: { [category: string]: string }, 
+    modifiedNames?: { [category: string]: string },
     modifiedColors?: { [category: string]: chrome.tabGroups.Color }
   ) => {
     console.log("Confirm Grouping clicked");
@@ -733,7 +754,7 @@ export default function Suggestion({
 
   return (
     <div className="bg-white relative rounded-[16px] size-full" data-name="suggestion">
-      <FreeForm 
+      <FreeForm
         selectedMode={selectedMode}
         onModeChange={onModeChange || (() => {})}
         onConfirm={handleConfirm}
