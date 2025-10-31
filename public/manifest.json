@@ -10,7 +10,6 @@
   "permissions": [
 	"tabs",
 	"tabGroups",
-	"scripting",
 	"storage"
   ],
   "host_permissions": [

@@ -1,4 +1,4 @@
-import { getCustomPrompt, getCustomGroups } from './storage';
+import { getCustomPrompt, getCustomGroups, getTabRange } from './storage';
 
 let globalSession: LanguageModel | null = null;
 
@@ -39,6 +39,7 @@ export async function categorizeTabsBatch(tabs: Array<{ index: number; title: st
   
   const customPrompt = await getCustomPrompt();
   const customGroups = await getCustomGroups();
+  const customTabRange = await getTabRange();
   
   // Log usage
   if (customPrompt) {
@@ -47,6 +48,7 @@ export async function categorizeTabsBatch(tabs: Array<{ index: number; title: st
   if (customGroups.length > 0) {
     console.log('Using custom groups:', customGroups);
   }
+  console.log('Using tab range:', customTabRange);
   
   // Build prompt with correct priority
   let promptText = '';
@@ -60,7 +62,7 @@ ABOVE INSTRUCTIONS ARE ABSOLUTELY MANDATORY. Follow them exactly as written, eve
 
 `;
   }
-  
+
   // SECOND PRIORITY: User selected categories - use these FIRST, before creating your own
   if (customGroups.length > 0) {
     promptText += `USER PROVIDED CATEGORIES (SECOND PRIORITY):
@@ -74,6 +76,8 @@ Only create your own categories if tabs don't match any user-provided category.
 `;
   }
 
+  promptText += `The number of tabs in each category should be within [${customTabRange}]`
+  
   if (existingGroups.length > 0) {
     promptText += `EXISTING CATEGORIES:
 ${existingGroups.join(', ')}`
