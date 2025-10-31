@@ -5,6 +5,8 @@ let globalSession: LanguageModel | null = null;
 export async function initSession() {
   if (!globalSession) {
     globalSession = await LanguageModel.create({
+      topK: 5,
+      temperature: 0.9,
       expectedOutputs: [{ type: "text", languages: ['en'] }],
       monitor(m) {
         m.addEventListener('downloadprogress', (e) => {
@@ -21,7 +23,9 @@ export async function initSession() {
  * Usage: const result = await prompt("your question here");
  */
 export async function prompt(input: string): Promise<string> {
-  const availability = await LanguageModel.availability();
+  const availability = await LanguageModel.availability({
+    expectedOutputs: [{ type: "text", languages: ['en'] }]
+  });
   if (availability === 'unavailable') {
     return 'Prompt API is not available';
   }
@@ -66,17 +70,16 @@ ABOVE INSTRUCTIONS ARE ABSOLUTELY MANDATORY. Follow them exactly as written, eve
   // SECOND PRIORITY: User selected categories - use these FIRST, before creating your own
   if (customGroups.length > 0) {
     promptText += `USER PROVIDED CATEGORIES (SECOND PRIORITY):
-${customGroups.join(', ')}
-
-
-PRIORITIZE USING THESE CATEGORY NAMES when tabs match them. For example:
-- If user provided "youtube" and there are YouTube tabs, use "youtube" or "Youtube"category ( the tab name is depends on AI)
-Use these user-provided names instead of creating your own like "Entertainment" or "AI Tools".
-Only create your own categories if tabs don't match any user-provided category.
+${customGroups.join(', ')}. PRIORITIZE USING THESE CATEGORY NAMES when tabs match them.
 `;
   }
 
-  promptText += `The number of tabs in each category should be within [${customTabRange}]`
+  promptText += `The number of tabs in each category will be given in the format [n,m]. The first number n means the
+  category should have at least n tabs. The second number m means the category should have at most m tabs.
+  Consider merge the small categories together to meet the minimum tab count.
+
+  NUMBER OF TABS IN EACH CATEGORY: [${customTabRange}]
+`
   
   if (existingGroups.length > 0) {
     promptText += `EXISTING CATEGORIES:
@@ -85,7 +88,8 @@ ${existingGroups.join(', ')}`
   
   // Main instruction
   promptText += `Analyze these browser tabs and group them.
-The CategoryName should be in one or two words. The indices are the index of the tabs, each tab is mapped to only one category. A category should have at least one tab in it.
+  The CategoryName should be in one or two words. The indices are the index of the tabs, each tab is mapped to only one category. A category should have at least one tab in it.
+  DO NOT GIVE ANY EXPLAINATION TO YOUR RESPONSE. JUST RETURN THE JSON FORMAT CATEGORY RESULTS.
 Return JSON format: [{"CategoryName": "category_name", "indices": [0, 1, 3]}, {"CategoryName": "another_category", "indices": [2, 4]}]
 
 Tabs:
