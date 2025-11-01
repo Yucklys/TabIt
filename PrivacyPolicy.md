@@ -1,5 +1,5 @@
 # TabSense Privacy Policy
-*Effective Date: Oct 31, 2024*
+*Effective Date: Oct 31, 2025*
 
 ## Overview
 TabSense is committed to protecting your privacy. This Privacy Policy explains how our Chrome extension handles your data and what information we access during operation.
