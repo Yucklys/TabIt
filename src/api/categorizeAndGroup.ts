@@ -1,5 +1,5 @@
 import { categorizeTabsBatch } from './ai';
-import { getTabInfoList } from './tabs';
+import { getTabInfoList, getTitleByIndex } from './tabs';
 
 type Tab = chrome.tabs.Tab;
 
@@ -41,7 +41,11 @@ export async function categorizeAndGroup(
   }
   
   console.log('Final Result:');
-  console.log(categorizedResult);
+  const categorizedTitles: { [category: string]: string[] } = {};
+  for (const [category, indices] of Object.entries(categorizedResult)) {
+    categorizedTitles[category] = await getTitleByIndex(indices);
+  }
+  console.log('Categorized Titles:', categorizedTitles);
   
   const endTime = Date.now();
   const runTime = (endTime - startTime) / 1000;

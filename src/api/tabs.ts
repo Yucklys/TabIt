@@ -28,17 +28,31 @@ export const getTabInfoList = (tabs: chrome.tabs.Tab[]): TabInfo[] => {
 export const getTabIdsByIndices = async (tabIndices: number[]): Promise<[number, ...number[]]> => {
   const allTabs = await chrome.tabs.query({});
   const tabIds: number[] = [];
-  
+
   for (const index of tabIndices) {
     const tab = allTabs.find(tab => tab.index === index);
     if (tab && tab.id !== undefined) {
       tabIds.push(tab.id);
     }
   }
-  
+
   if (tabIds.length === 0) {
     throw new Error('No valid tab IDs found for the given indices');
   }
-  
+
   return tabIds as [number, ...number[]];
+}
+
+export const getTitleByIndex = async (tabIndex: [number, ...number[]]): Promise<string[]> => {
+  const allTabs = await chrome.tabs.query({});
+  const titles: string[] = [];
+
+  for (const index of tabIndex) {
+    const tab = allTabs.find(tab => tab.index === index);
+    if (tab && tab.title !== undefined) {
+      titles.push(tab.title);
+    }
+  }
+
+  return titles;
 }
