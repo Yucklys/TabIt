@@ -3,18 +3,18 @@
     let
       version = "1.10.0";
 system = "x86_64-linux";
-devenv_root = "/home/yucklys/Projects/TabSense";
-devenv_dotfile = "/home/yucklys/Projects/TabSense/.devenv";
+devenv_root = "/home/yucklys/Projects/TabIt";
+devenv_dotfile = "/home/yucklys/Projects/TabIt/.devenv";
 devenv_dotfile_path = ./.devenv;
 devenv_tmpdir = "/run/user/1000";
-devenv_runtime = "/run/user/1000/devenv-280ad3d";
+devenv_runtime = "/run/user/1000/devenv-f88135d";
 devenv_istesting = false;
 devenv_direnvrc_latest_version = 1;
 container_name = null;
 active_profiles = [ ];
 hostname = "nixos";
 username = "yucklys";
-git_root = "/home/yucklys/Projects/TabSense";
+git_root = "/home/yucklys/Projects/TabIt";
 
         in {
         git-hooks.url = "github:cachix/git-hooks.nix";
@@ -30,18 +30,18 @@ git_root = "/home/yucklys/Projects/TabSense";
         let
           version = "1.10.0";
 system = "x86_64-linux";
-devenv_root = "/home/yucklys/Projects/TabSense";
-devenv_dotfile = "/home/yucklys/Projects/TabSense/.devenv";
+devenv_root = "/home/yucklys/Projects/TabIt";
+devenv_dotfile = "/home/yucklys/Projects/TabIt/.devenv";
 devenv_dotfile_path = ./.devenv;
 devenv_tmpdir = "/run/user/1000";
-devenv_runtime = "/run/user/1000/devenv-280ad3d";
+devenv_runtime = "/run/user/1000/devenv-f88135d";
 devenv_istesting = false;
 devenv_direnvrc_latest_version = 1;
 container_name = null;
 active_profiles = [ ];
 hostname = "nixos";
 username = "yucklys";
-git_root = "/home/yucklys/Projects/TabSense";
+git_root = "/home/yucklys/Projects/TabIt";
 
             devenv =
             if builtins.pathExists (devenv_dotfile_path + "/devenv.json")
