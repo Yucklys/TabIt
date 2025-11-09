@@ -29,12 +29,16 @@ export async function oneTimeGrouping(): Promise<void> {
     });
 
     console.log(`One-time mode categorization completed`);
-  } catch (error) {
-    console.error('Error in one-time grouping:', error);
-    await chrome.storage.session.set({ 
-      categorizationStatus: 'error',
-      categorizationError: error.message
-    });
-    throw error;
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error('Error in one-time grouping:', err);
+      await chrome.storage.session.set({ 
+        categorizationStatus: 'error',
+        categorizationError: err.message
+      });
+    } else {
+      console.error('Unknown error encountered:', err);
+      throw err;
+    }
   }
 }

@@ -49,12 +49,16 @@ export async function smartGrouping(): Promise<void> {
     }
     
     console.log(`Smart mode categorization completed`);
-  } catch (error) {
-    console.error('Error in smart grouping:', error);
-    await chrome.storage.session.set({ 
-      categorizationStatus: 'error',
-      categorizationError: error.message
-    });
-    throw error;
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error('Error in smart grouping:', err);
+      await chrome.storage.session.set({ 
+        categorizationStatus: 'error',
+        categorizationError: err.message
+      });
+    } else {
+      console.error('Unknown error encountered:', err);
+      throw err;
+    }
   }
 }

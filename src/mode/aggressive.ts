@@ -35,12 +35,16 @@ export async function aggressiveGrouping(): Promise<void> {
     });
     
     console.log(`Aggressive mode categorization completed`);
-  } catch (error) {
-    console.error('Error in aggressive grouping:', error);
-    await chrome.storage.session.set({ 
-      categorizationStatus: 'error',
-      categorizationError: error instanceof Error ? error.message : String(error)
-    });
-    throw error;
+  } catch (err) {
+    if (err instanceof Error) {
+      console.error('Error in aggressive grouping:', err);
+      await chrome.storage.session.set({ 
+        categorizationStatus: 'error',
+        categorizationError: err.message
+      });
+    } else {
+      console.error('Unknown error encountered:', err);
+      throw err;
+    }
   }
 }
