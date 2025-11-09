@@ -1,6 +1,6 @@
-import { getUngroupedTabs } from '@/api/tabs';
-import { categorizeAndGroup } from '../api/categorizeAndGroup';
-import { getAllTabGroups } from '../api/tabGroups';
+import { getUngroupedTabs } from '$api/tabs';
+import { categorizeAndGroup } from '$api/categorizeAndGroup';
+import { getAllTabGroups } from '$api/tabGroups';
 
 /**
  * Smart grouping: Categorize tabs and save result to session storage

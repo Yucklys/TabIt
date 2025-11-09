@@ -1,5 +1,5 @@
-import { categorizeAndGroup } from '@/api/categorizeAndGroup';
-import { getUngroupedTabs } from '@/api/tabs';
+import { categorizeAndGroup } from '$api/categorizeAndGroup';
+import { getUngroupedTabs } from '$api/tabs';
 
 /**
  * One-time grouping: Categorize tabs and save result to session storage

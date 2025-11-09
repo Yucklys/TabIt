@@ -1,4 +1,4 @@
-import { categorizeAndGroup } from '../api/categorizeAndGroup';
+import { categorizeAndGroup } from '$api/categorizeAndGroup';
 
 /**
  * Aggressive grouping: Categorize all tabs and save result to session storage

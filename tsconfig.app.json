@@ -19,9 +19,9 @@
     "moduleDetection": "force",
 	"baseUrl": ".",
 	"paths": {
-	  "@/*": [
-		"./src/*"
-	  ]
+	  "$lib": ["./src/lib"],
+      "$lib/*": ["./src/lib/*"],
+      "$api/*": ["./src/api/*"]
 	}
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]
