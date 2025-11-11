@@ -1,4 +1,4 @@
-import { getAllTabGroupsWithCounts } from "./tabGroups";
+import { getAllTabGroupsWithCounts } from "./tabGroups.ts";
 
 /**
  * Rename a tab group with validation and refresh

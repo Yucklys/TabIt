@@ -1,4 +1,4 @@
-import { getAllTabGroupsWithCounts } from "./tabGroups";
+import { getAllTabGroupsWithCounts } from "./tabGroups.ts";
 
 /**
  * Ungroup tabs and return updated groups list

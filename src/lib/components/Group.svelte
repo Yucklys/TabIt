@@ -1,6 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/utils";
-  import * as Item from "$lib/components/ui/item/index.ts";
+  import * as Item from "$lib/components/ui/item/index";
 
   interface Props {
     name: string;

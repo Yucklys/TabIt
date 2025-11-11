@@ -7,6 +7,7 @@
   # https://devenv.sh/packages/
   packages = with pkgs; [
     deno
+    svelte-language-server
   ];
 
   # https://devenv.sh/languages/
