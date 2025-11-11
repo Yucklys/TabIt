@@ -1,39 +1,59 @@
 <script lang="ts">
   import { cn } from "$lib/utils";
+  import * as Select from "$lib/components/ui/select/index";
+  import { MODES, type GroupingMode } from "$type/groupingMode";
 
   interface Props {
     class?: string;
-    mode?: string;
   }
-  
-  let { 
-    class: className = "",
-    mode = "Smart"
-  }: Props = $props();
 
-  // Image assets from Figma
-  const imgVector = "https://www.figma.com/api/mcp/asset/7dc238cb-08b9-4ef0-8281-f9882d7b6d86";
+  let { class: className = "" }: Props = $props();
+
+  let selectedMode = $state<GroupingMode>("smart");
+
+  const groupingModes = Object.values(MODES).map((mode) => ({
+    value: mode.id,
+    label: mode.name,
+  }));
+
+  const selectedLabel = $derived(MODES[selectedMode].name);
 </script>
 
 <div class={cn("flex items-center justify-between", className)}>
   <div class="flex items-center gap-3">
     <!-- Tabit logo -->
     <div class="relative w-[19px] h-[19px]">
-      <div class="absolute bg-[#ff4f4f] w-[9px] h-[7px] rounded-[2px] top-[12px] left-[10px]"></div>
-      <div class="absolute bg-[#ffab04] w-[9px] h-[12px] rounded-[2px] top-[7px] left-0"></div>
-      <div class="absolute bg-[#0486ff] w-[9px] h-[11px] rounded-[2px] top-0 left-[10px]"></div>
-      <div class="absolute bg-[#03b151] w-[9px] h-[5px] rounded-[2px] top-0 left-0"></div>
+      <div
+        class="absolute bg-[#ff4f4f] w-[9px] h-[7px] rounded-[2px] top-[12px] left-[10px]"
+      ></div>
+      <div
+        class="absolute bg-[#ffab04] w-[9px] h-[12px] rounded-[2px] top-[7px] left-0"
+      ></div>
+      <div
+        class="absolute bg-[#0486ff] w-[9px] h-[11px] rounded-[2px] top-0 left-[10px]"
+      ></div>
+      <div
+        class="absolute bg-[#03b151] w-[9px] h-[5px] rounded-[2px] top-0 left-0"
+      ></div>
     </div>
-    <h1 class="text-[16px] text-black">TabIt</h1>
+    <h1>TabIt</h1>
   </div>
-  
-  <!-- Mode selector -->
-  <div class="bg-[#f3f3f5] flex items-center gap-[10px] px-[7px] py-1 rounded-[12px]">
-    <span class="text-[14px] text-[#717182]">Mode: {mode}</span>
-    <div class="relative size-[24px]">
-      <div class="absolute inset-[41.67%_29.17%_37.5%_29.17%]">
-        <img alt="" class="block max-w-none size-full" src={imgVector} />
-      </div>
-    </div>
-  </div>
+
+  <Select.Root
+    type="single"
+    onValueChange={(newMode) => (selectedMode = newMode as GroupingMode)}
+    items={groupingModes}
+    bind:value={selectedMode}
+  >
+    <Select.Trigger>
+      Mode: {selectedLabel}
+    </Select.Trigger>
+    <Select.Content>
+      {#each groupingModes as mode}
+        <Select.Item value={mode.value} label={mode.label}>
+          {mode.label}
+        </Select.Item>
+      {/each}
+    </Select.Content>
+  </Select.Root>
 </div>

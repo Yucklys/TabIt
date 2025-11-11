@@ -27,7 +27,7 @@
 <main>
   <Card.Root class="w-[420px] p-8">
     <!-- Header logo and title -->
-    <Header class="mb-6" mode="Smart" />
+    <Header class="mb-6" />
 
     <!-- AI Suggested Group Header -->
     <div>

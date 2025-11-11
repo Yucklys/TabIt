@@ -19,7 +19,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      $lib: path.resolve("./src/lib")
+      $lib: path.resolve("./src/lib"),
+      $api: path.resolve("./src/api"),
+      $type: path.resolve("./src/type")
     }
   },
   build: {
