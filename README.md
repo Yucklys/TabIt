@@ -6,7 +6,7 @@ TabSense is an AI driven Tab Manager for Chrome.
 
 ## Development
 ### Dependencies
-- [Deno](https://deno.com/)
+- [Bun](https://bun.com/)
 
 ### Build locally
 1. First make sure you have installed all the dependencies and cloned the repository by:
@@ -16,12 +16,12 @@ git clone https://github.com/Yucklys/TabSense
 
 2. Go into the cloned directory and install project dependencies.
 ```
-deno install
+bun install
 ```
 
 3. Build the extension for Chrome
 ```
-deno run build
+bun run build
 ```
 Now, there should be a `build` folder in your cloned directory. It contains the unpacked extension files for your browser. Check the links below according to see how to add this extension to your browser.
 
@@ -32,7 +32,7 @@ You should now be able to use the extension in your browser.
 ### Local development
 You can start local development by:
 ```
-deno run dev
+bun run dev
 ```
 
 ## Copyright

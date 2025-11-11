@@ -23,7 +23,7 @@ export default defineConfig({
     }
   },
   build: {
-    target: 'esnext',
+    target: 'chrome138',
     outDir: 'build',
     rollupOptions: {
       input: {
