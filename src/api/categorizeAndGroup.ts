@@ -19,24 +19,20 @@ export async function categorizeAndGroup(
   const validTabInfoList = allTabInfoList.filter(tab =>
     tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')
   );
-
-  allTabInfoList.forEach((tab) => {
-    const isValid = tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://');
-    if (isValid) {
-      console.log(`Tab ${tab.index}:`, `{index: ${tab.index}, url: "${tab.url}", title: "${tab.title}"}`);
-    } else {
-      console.log(`Tab ${tab.index}: INVALID (filtered)`);
-    }
-  });
+  console.log('Total tab number:', validTabInfoList.length)
 
   const categorizedTabs = await categorizeTabsBatch(validTabInfoList, existingGroups);
+  
+  console.log('Raw AI categorized response:', categorizedTabs);
   
   const categorizedResult: { [category: string]: [number, ...number[]] } = {};
   for (const group of categorizedTabs) {
     if (!categorizedResult[group.CategoryName]) {
       categorizedResult[group.CategoryName] = group.indices;
+      console.log(`Created new category "${group.CategoryName}" with indices:`, group.indices);
     } else {
       categorizedResult[group.CategoryName].push(...group.indices);
+      console.log(`Merged into existing category "${group.CategoryName}". New indices:`, categorizedResult[group.CategoryName]);
     }
   }
   

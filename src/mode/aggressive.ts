@@ -26,7 +26,7 @@ export async function aggressiveGrouping(): Promise<void> {
       return;
     }
     
-    const categorizedResult = await categorizeAndGroup(validTabs);
+    const categorizedResult = await categorizeAndGroup(validTabs, []);
 
     // Save result to session storage for UI to pick up
     await chrome.storage.session.set({ 
@@ -39,7 +39,7 @@ export async function aggressiveGrouping(): Promise<void> {
     console.error('Error in aggressive grouping:', error);
     await chrome.storage.session.set({ 
       categorizationStatus: 'error',
-      categorizationError: error.message
+      categorizationError: error instanceof Error ? error.message : String(error)
     });
     throw error;
   }

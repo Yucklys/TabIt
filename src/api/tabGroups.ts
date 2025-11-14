@@ -24,26 +24,39 @@ export async function createTabGroup(
 
     const tabIds = await getTabIdsByIndices(indice);
 
-    if (tabIds.length) {
-      const groupId = await chrome.tabs.group({
-        tabIds,
-      });
-      
-      const updateParams: { title: string; color?: chrome.tabGroups.Color } = {
-        title: groupName.trim()
-      };
-      
-      if (color) {
-        updateParams.color = color;
-      }
-      
-      await chrome.tabGroups.update(groupId, updateParams);
-    
-      return await chrome.tabGroups.get(groupId);
-    }
-    return null;
+    return await createTabGroupFromIds(tabIds, groupName, color);
   } catch (error) {
     console.error('Error creating tab group:', error);
+    return null;
+  }
+}
+
+/**
+ * Create a tab group with given tab IDs, name, and optional color
+ */
+export async function createTabGroupFromIds(
+  tabIds: [number, ...number[]], 
+  groupName: string, 
+  color?: chrome.tabGroups.Color
+): Promise<TabGroup | null> {
+  try {
+    const groupId = await chrome.tabs.group({
+      tabIds,
+    });
+    
+    const updateParams: { title: string; color?: chrome.tabGroups.Color } = {
+      title: groupName.trim()
+    };
+    
+    if (color) {
+      updateParams.color = color;
+    }
+    
+    await chrome.tabGroups.update(groupId, updateParams);
+  
+    return await chrome.tabGroups.get(groupId);
+  } catch (error) {
+    console.error('Error creating tab group from IDs:', error);
     return null;
   }
 }

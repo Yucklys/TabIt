@@ -13,7 +13,8 @@ import { getUserSettings, saveUserSettings } from "./api/storage";
 import { oneTimeGrouping } from "./mode/oneTime";
 import { smartGrouping } from "./mode/smart";
 import { aggressiveGrouping } from "./mode/aggressive";
-import { getAllTabGroups, addTabsToExistingGroup, createTabGroup } from "./api/tabGroups";
+import { getAllTabGroups, addTabsToExistingGroup, createTabGroup, deleteTabGroup, createTabGroupFromIds } from "./api/tabGroups";
+import { getTabIdsByIndices } from "./api/tabs";
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(7); // Default to 7, will be set to 1 if startup event occurs
@@ -63,8 +64,6 @@ export default function App() {
   };
 
   const startAIGrouping = async () => {
-    console.log("Starting AI categorization...");
-    
     // Save current settings (customPrompt and customGroups are already saved by CustomizeInteractive)
     await saveUserSettings({
       selectedMode: selectedMode as 'onetime' | 'smart' | 'aggressive'
@@ -95,12 +94,10 @@ export default function App() {
   };
 
   const handleStep3Complete = async () => {
-    console.log("Step 3 completed, showing loading animation...");
     await startAIGrouping();
   };
 
   const handleViewResults = () => {
-    console.log("View results clicked, showing suggestion page");
     setCurrentStep(6);
   };
 
@@ -113,38 +110,54 @@ export default function App() {
     modifiedNames?: { [category: string]: string },
     modifiedColors?: { [category: string]: chrome.tabGroups.Color }
   ) => {
-    console.log("Confirm Grouping clicked, creating tab groups...");
-    console.log("Modified names received:", modifiedNames);
-    console.log("Modified colors received:", modifiedColors);
-    
     if (categorizedResult) {
       try {
-        // Always check for existing groups to avoid duplicates (for all modes)
-        const existingGroups = await getAllTabGroups();
-        const existingGroupNames = new Set(existingGroups.map(g => g.title).filter(Boolean));
-        
-        console.log('Checking for existing groups:', Array.from(existingGroupNames));
-        
-        for (const [category, tabIndices] of Object.entries(categorizedResult)) {
-          if (tabIndices.length > 0) {
-            // Use modified name if provided, otherwise use original category
-            const originalCategory = category;
-            const groupName = modifiedNames?.[category] || category;
-            const color = modifiedColors?.[category];
-            
-            console.log(`Processing category: "${originalCategory}" -> final name: "${groupName}"`);
-            
-            // Check if group with this name already exists in Chrome
-            const existingGroup = existingGroups.find(g => g.title === groupName);
-            
-            if (existingGroup) {
-              // Group already exists in Chrome, merge tabs into it
-              console.log(`✓ Group "${groupName}" already exists in Chrome (ID: ${existingGroup.id}), merging ${tabIndices.length} tabs into it`);
-              await addTabsToExistingGroup(existingGroup.id, tabIndices, color);
-            } else {
-              // No existing group found, create new one
-              console.log(`✗ Group "${groupName}" doesn't exist in Chrome, creating new group with ${tabIndices.length} tabs`);
-              await createTabGroup(tabIndices, groupName, color);
+        if (selectedMode === 'aggressive') {
+          // Delete all existing groups first
+          const existingGroups = await getAllTabGroups();
+          for (const group of existingGroups) {
+            await deleteTabGroup(group.id);
+          }
+          
+          // Convert all tab indices to stable tab IDs before grouping
+          const categorizedTabIds: { [category: string]: [number, ...number[]] } = {};
+          for (const [category, tabIndices] of Object.entries(categorizedResult)) {
+            if (tabIndices.length > 0) {
+              const tabIds = await getTabIdsByIndices(tabIndices);
+              categorizedTabIds[category] = tabIds;
+            }
+          }
+          
+          // Now create groups using the stable tab IDs
+          for (const [category, tabIds] of Object.entries(categorizedTabIds)) {
+            if (tabIds.length > 0) {
+              const groupName = modifiedNames?.[category] || category;
+              const color = modifiedColors?.[category];
+              
+              await createTabGroupFromIds(tabIds, groupName, color);
+            }
+          }
+        } else {
+          const existingGroups = await getAllTabGroups();
+          const existingGroupNames = new Set(existingGroups.map(g => g.title).filter(Boolean));
+          
+          for (const [category, tabIndices] of Object.entries(categorizedResult)) {
+            if (tabIndices.length > 0) {
+              // Use modified name if provided, otherwise use original category
+              const originalCategory = category;
+              const groupName = modifiedNames?.[category] || category;
+              const color = modifiedColors?.[category];
+              
+              // Check if group with this name already exists in Chrome
+              const existingGroup = existingGroups.find(g => g.title === groupName);
+              
+              if (existingGroup) {
+                // Group already exists in Chrome, merge tabs into it
+                await addTabsToExistingGroup(existingGroup.id, tabIndices, color);
+              } else {
+                // No existing group found, create new one
+                await createTabGroup(tabIndices, groupName, color);
+              }
             }
           }
         }
@@ -159,13 +172,10 @@ export default function App() {
   };
 
   const handleCustomize = () => {
-    console.log("Customize clicked, navigating to customize page");
     setCurrentStep(8);
   };
 
   const handleCustomizeComplete = async () => {
-    console.log("Customize completed, starting AI categorization...");
-    
     // Settings are already saved in storage by CustomizeInteractive's handleGetStarted
     // Just start the AI grouping process
     await startAIGrouping();
