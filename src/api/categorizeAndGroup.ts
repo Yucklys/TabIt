@@ -29,14 +29,11 @@ export async function categorizeAndGroup(
   for (const group of categorizedTabs) {
     if (!categorizedResult[group.CategoryName]) {
       categorizedResult[group.CategoryName] = group.indices;
-      console.log(`Created new category "${group.CategoryName}" with indices:`, group.indices);
     } else {
       categorizedResult[group.CategoryName].push(...group.indices);
-      console.log(`Merged into existing category "${group.CategoryName}". New indices:`, categorizedResult[group.CategoryName]);
     }
   }
   
-  console.log('Final Result:');
   const categorizedTitles: { [category: string]: string[] } = {};
   for (const [category, indices] of Object.entries(categorizedResult)) {
     categorizedTitles[category] = await getTitleByIndex(indices);

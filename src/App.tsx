@@ -10,16 +10,14 @@ import Suggestion from "./imports/Suggestion";
 import SuggestionFinal from "./imports/Suggestion-5-98-interactive";
 import CustomizeInteractive from "./components/CustomizeInteractive";
 import { getUserSettings, saveUserSettings } from "./api/storage";
-import { oneTimeGrouping } from "./mode/oneTime";
-import { smartGrouping } from "./mode/smart";
-import { aggressiveGrouping } from "./mode/aggressive";
+import { type GroupingMode, type Mode, MODES } from "./type/groupingMode";
 import { getAllTabGroups, addTabsToExistingGroup, createTabGroup, deleteTabGroup, createTabGroupFromIds } from "./api/tabGroups";
 import { getTabIdsByIndices } from "./api/tabs";
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(7); // Default to 7, will be set to 1 if startup event occurs
   const [loadingFrame, setLoadingFrame] = useState(1);
-  const [selectedMode, setSelectedMode] = useState("smart");
+  const [selectedMode, setSelectedMode] = useState<GroupingMode>("smart");
   const [categorizedResult, setCategorizedResult] = useState<{ [category: string]: [number, ...number[]] } | null>(null);
 
   // Check for startup event and load user settings on mount
@@ -66,7 +64,7 @@ export default function App() {
   const startAIGrouping = async () => {
     // Save current settings (customPrompt and customGroups are already saved by CustomizeInteractive)
     await saveUserSettings({
-      selectedMode: selectedMode as 'onetime' | 'smart' | 'aggressive'
+      selectedMode: selectedMode
     });
     
     setCurrentStep(4);
@@ -76,18 +74,9 @@ export default function App() {
     await chrome.storage.session.set({ categorizationStatus: 'processing' });
       
     try {
-      // Execute the appropriate categorization function
-      switch(selectedMode) {
-        case 'onetime':
-          await oneTimeGrouping();
-          break;
-        case 'smart':
-          await smartGrouping();
-          break;
-        case 'aggressive':
-          await aggressiveGrouping();
-          break;
-      }
+      // Execute the appropriate categorization function using mode registry
+      const mode = MODES[selectedMode];
+      await mode.groupingFunction();
     } catch (error) {
       console.error("Error during categorization:", error);
     }
@@ -101,9 +90,9 @@ export default function App() {
     setCurrentStep(6);
   };
 
-  const handleModeChange = async (mode: string) => {
+  const handleModeChange = async (mode: GroupingMode) => {
     setSelectedMode(mode);
-    await saveUserSettings({ selectedMode: mode as 'onetime' | 'smart' | 'aggressive' });
+    await saveUserSettings({ selectedMode: mode });
   };
 
   const handleConfirmGrouping = async (
@@ -138,11 +127,20 @@ export default function App() {
             }
           }
         } else {
+          // Convert all tab indices to stable tab IDs before grouping
+          const categorizedTabIds: { [category: string]: [number, ...number[]] } = {};
+          for (const [category, tabIndices] of Object.entries(categorizedResult)) {
+            if (tabIndices.length > 0) {
+              const tabIds = await getTabIdsByIndices(tabIndices);
+              categorizedTabIds[category] = tabIds;
+            }
+          }
+          
           const existingGroups = await getAllTabGroups();
           const existingGroupNames = new Set(existingGroups.map(g => g.title).filter(Boolean));
           
-          for (const [category, tabIndices] of Object.entries(categorizedResult)) {
-            if (tabIndices.length > 0) {
+          for (const [category, tabIds] of Object.entries(categorizedTabIds)) {
+            if (tabIds.length > 0) {
               // Use modified name if provided, otherwise use original category
               const originalCategory = category;
               const groupName = modifiedNames?.[category] || category;
@@ -153,10 +151,10 @@ export default function App() {
               
               if (existingGroup) {
                 // Group already exists in Chrome, merge tabs into it
-                await addTabsToExistingGroup(existingGroup.id, tabIndices, color);
+                await addTabsToExistingGroup(existingGroup.id, tabIds, color);
               } else {
                 // No existing group found, create new one
-                await createTabGroup(tabIndices, groupName, color);
+                await createTabGroupFromIds(tabIds, groupName, color);
               }
             }
           }

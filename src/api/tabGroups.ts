@@ -76,29 +76,23 @@ export async function findExistingGroupByName(groupName: string): Promise<TabGro
 }
 
 /**
- * Add tabs to an existing group by group ID
+ * Add tabs to an existing group by group ID using tab IDs
  */
 export async function addTabsToExistingGroup(
   groupId: number, 
-  tabIndices: [number, ...number[]],
+  tabIds: [number, ...number[]],
   color?: chrome.tabGroups.Color
 ): Promise<TabGroup | null> {
   try {
-    const tabIds = await getTabIdsByIndices(tabIndices);
+    // Add new tabs to the existing group
+    await chrome.tabs.group({ groupId, tabIds });
     
-    if (tabIds.length > 0) {
-      // Add new tabs to the existing group
-      await chrome.tabs.group({ groupId, tabIds });
-      
-      // Update color if provided
-      if (color) {
-        await chrome.tabGroups.update(groupId, { color });
-      }
-      
-      return await chrome.tabGroups.get(groupId);
+    // Update color if provided
+    if (color) {
+      await chrome.tabGroups.update(groupId, { color });
     }
     
-    return null;
+    return await chrome.tabGroups.get(groupId);
   } catch (error) {
     console.error('Error adding tabs to existing group:', error);
     return null;

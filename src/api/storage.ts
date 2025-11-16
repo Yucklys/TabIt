@@ -1,11 +1,12 @@
 /**
  * Chrome Storage utilities for user settings
  */
+import { type GroupingMode } from '../type/groupingMode';
 
 export interface UserSettings {
   customPrompt?: string;
   customGroups?: string[];
-  selectedMode?: 'onetime' | 'smart' | 'aggressive';
+  selectedMode?: GroupingMode;
   tabRange?: [number, number];
 }
 
@@ -50,11 +51,11 @@ export async function setCustomGroups(groups: string[]): Promise<void> {
   await chrome.storage.local.set({ customGroups: groups });
 }
 
-export async function getSelectedMode(): Promise<'onetime' | 'smart' | 'aggressive'> {
+export async function getSelectedMode(): Promise<GroupingMode> {
   const result = await chrome.storage.local.get('selectedMode');
   return result.selectedMode || 'smart';
 }
 
-export async function setSelectedMode(mode: 'onetime' | 'smart' | 'aggressive'): Promise<void> {
+export async function setSelectedMode(mode: GroupingMode): Promise<void> {
   await chrome.storage.local.set({ selectedMode: mode });
 }

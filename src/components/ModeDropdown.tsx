@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 const GROUPING_MODES = [
-  { value: "onetime", label: "One-Time" },
+  { value: "oneTime", label: "One-Time" },
   { value: "smart", label: "Smart" },
   { value: "aggressive", label: "Aggressive" },
 ];

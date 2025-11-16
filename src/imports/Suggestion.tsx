@@ -554,14 +554,11 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
 
   // Handle confirm button click - collect all modifications
   const handleConfirmClick = () => {
-    console.log('handleConfirmClick called, collecting modifications...');
-
     // Build modified names map (category -> newName)
     const modifiedNames: { [category: string]: string } = {};
     visibleCategories.forEach((category) => {
       if (renamedGroups[category]) {
         modifiedNames[category] = renamedGroups[category];
-        console.log(`Renamed: ${category} -> ${renamedGroups[category]}`);
       }
     });
 
@@ -571,12 +568,8 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
       const groupId = index + 1;
       if (selectedColors[groupId]) {
         modifiedColors[category] = selectedColors[groupId];
-        console.log(`Color changed: ${category} -> ${selectedColors[groupId]}`);
       }
     });
-
-    console.log('Modified names:', modifiedNames);
-    console.log('Modified colors:', modifiedColors);
 
     // Call onConfirm with the modified data
     onConfirm(modifiedNames, modifiedColors);
