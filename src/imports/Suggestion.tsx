@@ -670,7 +670,7 @@ function FreeForm({ selectedMode, onModeChange, onConfirm, onCustomize, categori
       {/* Dynamic group rendering */}
       {visibleCategories.length > 0 ? (
         visibleCategories.map((category, index) => {
-          const tabCount = categorizedResult[category].length;
+          const tabCount = Math.max(1, categorizedResult[category].length - 1);
           const topPosition = 147 + (index * 76);
 
           return (

@@ -637,7 +637,7 @@ function FreeForm({ selectedMode = "smart", onModeChange, onCustomize, categoriz
         })
       ) : categories.length > 0 ? (
         categories.map((category, index) => {
-          const tabCount = categorizedResult[category].length;
+          const tabCount = Math.max(1, categorizedResult[category].length - 1);
           const topPosition = 147 + (index * 76); // Space groups vertically
           const color = colors[index % colors.length];
           
