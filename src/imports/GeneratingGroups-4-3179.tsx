@@ -93,17 +93,15 @@ function Group1() {
 
 
 function Card4() {
-  const transition = {
-    duration: 0.8,
-    ease: [0.25, 0.1, 0.25, 1], // Gentle curve
-  };
-
   return (
     <motion.div
       layoutId="card-red"
       className="absolute bg-[#ff4f4f] bottom-[16.18%] left-0 right-[76.27%] rounded-[6px] top-[14.71%]"
       data-name="Card"
-      transition={transition}
+      transition={{
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1] as const,
+      }}
     >
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
     </motion.div>
@@ -111,17 +109,15 @@ function Card4() {
 }
 
 function Card5() {
-  const transition = {
-    duration: 0.8,
-    ease: [0.25, 0.1, 0.25, 1], // Gentle curve
-  };
-
   return (
     <motion.div
       layoutId="card-orange"
       className="absolute bg-[#ffab04] inset-[60.29%_50.85%_-5.88%_25.42%] rounded-[6px]"
       data-name="Card"
-      transition={transition}
+      transition={{
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
     >
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
     </motion.div>
@@ -129,17 +125,15 @@ function Card5() {
 }
 
 function Card6() {
-  const transition = {
-    duration: 0.8,
-    ease: [0.25, 0.1, 0.25, 1], // Gentle curve
-  };
-
   return (
     <motion.div
       layoutId="card-blue"
       className="bg-[#0486ff] relative rounded-[6px] size-full"
       data-name="Card"
-      transition={transition}
+      transition={{
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
     >
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
     </motion.div>
@@ -147,17 +141,15 @@ function Card6() {
 }
 
 function Card7() {
-  const transition = {
-    duration: 0.8,
-    ease: [0.25, 0.1, 0.25, 1], // Gentle curve
-  };
-
   return (
     <motion.div
       layoutId="card-green"
       className="absolute bg-[#03b151] bottom-[16.18%] left-[76.27%] right-0 rounded-[6px] top-0"
       data-name="Card"
-      transition={transition}
+      transition={{
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
     >
       <div aria-hidden="true" className="absolute border-[0.8px] border-[rgba(0,0,0,0.1)] border-solid inset-0 pointer-events-none rounded-[6px]" />
     </motion.div>

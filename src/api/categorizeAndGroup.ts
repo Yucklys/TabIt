@@ -10,7 +10,6 @@ type Tab = chrome.tabs.Tab;
  */
 export async function categorizeAndGroup(
   tabs: Tab[],
-  existingGroups: string[] = []
 ): Promise<{ [category: string]: [number, ...number[]] }> {
   const tabInfoList = getTabProps(tabs);
   console.log('Total tab number:', tabInfoList.length)

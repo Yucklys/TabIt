@@ -1,85 +1,10 @@
 import type { DomainGroup } from './domainGrouper';
 import { getDomainGroupSummary } from './domainGrouper';
 
-const similaritySchema = {
-  "type": "object",
-  "properties": {
-    "similarity": {
-      "type": "number",
-      "minimum": 0.0,
-      "maximum": 1.0
-    }
-  },
-  "required": ["similarity"]
-};
-
 /**
  * Similarity matrix storing pairwise similarity scores
  */
 export type SimilarityMatrix = Map<string, Map<string, number>>;
-
-/**
- * Initialize AI session for similarity scoring
- */
-async function initSimilaritySession() {
-  return await LanguageModel.create({
-    initialPrompts: [
-      {
-        role: "system",
-        content: `You are a semantic similarity analyzer. Compare browser tab groups and rate their similarity.
-
-Scoring guidelines:
-- 1.0: Identical or extremely similar topics (e.g., same project documentation)
-- 0.7-0.9: Related topics (e.g., frontend and backend of same project)
-- 0.4-0.6: Loosely related (e.g., different programming topics)
-- 0.1-0.3: Weakly related (e.g., both about technology but different domains)
-- 0.0: Completely unrelated`
-      }
-    ],
-    expectedOutputs: [{ "type": "text", "languages": ["en"]}]
-  });
-}
-
-/**
- * Score semantic similarity between two domain groups using AI
- * @param session - Reusable AI session
- * @returns Similarity score between 0.0 (completely different) and 1.0 (identical)
- */
-async function scorePairSimilarity(
-  group1: DomainGroup,
-  group2: DomainGroup,
-  session: any
-): Promise<number> {
-  const group1Summary = getDomainGroupSummary(group1);
-  const group2Summary = getDomainGroupSummary(group2);
-
-  const promptText = `Compare these two groups of browser tabs and rate their semantic similarity:
-
-Group A:
-${group1Summary}
-
-Group B:
-${group2Summary}
-
-Consider:
-- Are they related to the same project, topic, or task?
-- Would a user likely want to work with both groups together?
-- Do they serve similar purposes?
-
-Return your similarity score (0.0 to 1.0).`;
-
-  try {
-    const response = await session.prompt(promptText, {
-      responseConstraint: similaritySchema
-    });
-
-    const parsed = JSON.parse(response);
-    return Math.max(0.0, Math.min(1.0, parsed.similarity));
-  } catch (error) {
-    console.error('Error scoring similarity:', error);
-    return 0.0;
-  }
-}
 
 /**
  * Create worker pool for parallel similarity scoring

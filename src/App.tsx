@@ -10,7 +10,7 @@ import Suggestion from "./imports/Suggestion";
 import SuggestionFinal from "./imports/Suggestion-5-98-interactive";
 import CustomizeInteractive from "./components/CustomizeInteractive";
 import { getUserSettings, saveUserSettings } from "./api/storage";
-import { type GroupingMode, type Mode, MODES } from "./type/groupingMode";
+import { type GroupingMode, MODES } from "./type/groupingMode";
 import { getAllTabGroups, addTabsToExistingGroup, deleteTabGroup, createTabGroupFromIds } from "./api/tabGroups";
 
 export default function App() {
@@ -93,9 +93,10 @@ export default function App() {
     setCurrentStep(6);
   };
 
-  const handleModeChange = async (mode: GroupingMode) => {
-    setSelectedMode(mode);
-    await saveUserSettings({ selectedMode: mode });
+  const handleModeChange = (mode: string) => {
+    const groupingMode = mode as GroupingMode;
+    setSelectedMode(groupingMode);
+    saveUserSettings({ selectedMode: groupingMode }); // Fire and forget
   };
 
   const handleConfirmGrouping = async (
@@ -121,12 +122,10 @@ export default function App() {
           }
         } else {
           const existingGroups = await getAllTabGroups();
-          const existingGroupNames = new Set(existingGroups.map(g => g.title).filter(Boolean));
 
           for (const [category, tabIds] of Object.entries(categorizedResult)) {
             if (tabIds.length > 0) {
               // Use modified name if provided, otherwise use original category
-              const originalCategory = category;
               const groupName = modifiedNames?.[category] || category;
               const color = modifiedColors?.[category];
               
