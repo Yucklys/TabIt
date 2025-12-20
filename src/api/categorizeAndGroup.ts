@@ -12,16 +12,11 @@ export async function categorizeAndGroup(
   existingGroups: string[] = []
 ): Promise<{ [category: string]: [number, ...number[]] }> {
   const startTime = Date.now();
-  
-  const allTabInfoList = getTabInfoList(tabs);
-  
-  // Filter out invalid tabs (chrome://, chrome-extension://)
-  const validTabInfoList = allTabInfoList.filter(tab =>
-    tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')
-  );
-  console.log('Total tab number:', validTabInfoList.length)
 
-  const categorizedTabs = await categorizeTabsBatch(validTabInfoList, existingGroups);
+  const tabInfoList = getTabInfoList(tabs);
+  console.log('Total tab number:', tabInfoList.length)
+
+  const categorizedTabs = await categorizeTabsBatch(tabInfoList, existingGroups);
   
   console.log('Raw AI categorized response:', categorizedTabs);
   

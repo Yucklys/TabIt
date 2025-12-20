@@ -1,8 +1,5 @@
-export interface TabInfo {
-  index: number;
-  url: string;
-  title: string;
-}
+import { extractDomain, extractPath } from '@/utils/url';
+import type { TabProps } from '@/type/tabProps';
 
 const defaultTabFilters = {
   pinned: false
@@ -12,15 +9,17 @@ export const getUngroupedTabs = (): Promise<chrome.tabs.Tab[]> => {
   return chrome.tabs.query({ ...defaultTabFilters, groupId: chrome.tabGroups.TAB_GROUP_ID_NONE })
 };
 
-const getTabInfo = (tab: chrome.tabs.Tab, index: number): TabInfo => {
+const getTabInfo = (tab: chrome.tabs.Tab, index: number): TabProps => {
+  const url = tab.url || '';
   return {
     index,
-    url: tab.url || '',
-    title: tab.title || ''
+    title: tab.title || '',
+    domain: extractDomain(url),
+    path: extractPath(url)
   };
 }
 
-export const getTabInfoList = (tabs: chrome.tabs.Tab[]): TabInfo[] => {
+export const getTabInfoList = (tabs: chrome.tabs.Tab[]): TabProps[] => {
   // Keep original index even for invalid tabs
   return tabs.map(tab => getTabInfo(tab, tab.index));
 }

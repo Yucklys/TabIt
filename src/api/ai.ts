@@ -1,4 +1,5 @@
 import { getCustomPrompt, getCustomGroups, getTabRange } from './storage';
+import type { TabProps } from '@/type/tabProps';
 
 const schema = {
   "type": "array",
@@ -15,6 +16,8 @@ const schema = {
 }
 
 export const initSession = async () => {
+  let lastLoggedProgress = -1;
+
   return await LanguageModel.create({
     initialPrompts: [
       {
@@ -24,12 +27,17 @@ export const initSession = async () => {
         Requirements:
         - CategoryName: 1-2 words only.
         - Each tab belongs to exactly one category, all tab index must appear only once.
-        - Each category must have at least one tab.`
+        - Each category must have at least one tab.
+        - CRITICAL: All tabs from the same domain MUST be placed in the same category. Never split tabs from the same domain into different categories.`
       }
     ],
     monitor(m) {
       m.addEventListener('downloadprogress', (e) => {
-        console.log(`Downloaded ${e.loaded * 100}%`);
+        const progress = Math.floor(e.loaded * 10) * 10; // Round down to nearest 10%
+        if (progress !== lastLoggedProgress) {
+          console.log(`Downloaded ${progress}%`);
+          lastLoggedProgress = progress;
+        }
       });
     },
   });
@@ -147,10 +155,10 @@ ${existingGroups.join(', ')}`;
  * Batch categorize multiple tabs at once
  */
 export const categorizeTabsBatch = async (
-  tabs: Array<{index: number, title: string, url: string}>, 
+  tabs: TabProps[],
   existingGroups: string[]
 ): Promise<Array<{CategoryName: string, indices: [number, ...number[]]}>> => {
-  const tabsInfo = tabs.map((tab) => `${tab.index}: ${tab.title} (${tab.url})`).join('\n');
+  const tabsInfo = tabs.map((tab) => `${tab.index}: ${tab.title} | ${tab.domain}${tab.path}`).join('\n');
   
   const customPrompt = await getCustomPrompt();
   const customGroups = await getCustomGroups();
