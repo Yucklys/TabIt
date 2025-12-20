@@ -1,35 +1,4 @@
-import { getTabIdsByIndices } from "./tabs";
-
 type TabGroup = chrome.tabGroups.TabGroup;
-
-/**
- * Create a tab group with given tab indices, name, and optional color
- */
-export async function createTabGroup(
-  indice: [number, ...number[]], 
-  groupName: string, 
-  color?: chrome.tabGroups.Color
-): Promise<TabGroup | null> {
-  try {
-    // Validate input
-    if (!indice || indice.length === 0) {
-      console.error('No tab index provided');
-      return null;
-    }
-
-    if (!groupName || groupName.trim() === '') {
-      console.error('No group name provided');
-      return null;
-    }
-
-    const tabIds = await getTabIdsByIndices(indice);
-
-    return await createTabGroupFromIds(tabIds, groupName, color);
-  } catch (error) {
-    console.error('Error creating tab group:', error);
-    return null;
-  }
-}
 
 /**
  * Create a tab group with given tab IDs, name, and optional color
@@ -62,20 +31,6 @@ export async function createTabGroupFromIds(
 }
 
 /**
- * Check if a tab group with the given name already exists
- */
-export async function findExistingGroupByName(groupName: string): Promise<TabGroup | null> {
-  try {
-    const groups = await chrome.tabGroups.query({});
-    const existingGroup = groups.find(group => group.title === groupName);
-    return existingGroup || null;
-  } catch (error) {
-    console.error('Error finding existing group:', error);
-    return null;
-  }
-}
-
-/**
  * Add tabs to an existing group by group ID using tab IDs
  */
 export async function addTabsToExistingGroup(
@@ -96,43 +51,6 @@ export async function addTabsToExistingGroup(
   } catch (error) {
     console.error('Error adding tabs to existing group:', error);
     return null;
-  }
-}
-
-/**
- * Create multiple tab groups from categorized tabs with custom names and colors
- */
-export async function createTabGroupsFromCategories(
-  categorizedTabs: { [category: string]: [number, ...number[]] },
-  customNames?: { [category: string]: string },
-  customColors?: { [category: string]: chrome.tabGroups.Color }
-): Promise<TabGroup[]> {
-  const createdGroups: TabGroup[] = [];
-  
-  try {
-    console.log('Creating tab groups with custom names:', customNames);
-    console.log('Creating tab groups with custom colors:', customColors);
-    
-    for (const [category, tabIndices] of Object.entries(categorizedTabs)) {
-      if (tabIndices.length > 0) {
-        // Use custom name if provided, otherwise use category
-        const groupName = customNames?.[category] || category;
-        // Use custom color if provided
-        const color = customColors?.[category];
-        
-        console.log(`Creating group: ${category} -> name: ${groupName}, color: ${color}`);
-        
-        const group = await createTabGroup(tabIndices, groupName, color);
-        if (group) {
-          createdGroups.push(group);
-        }
-      }
-    }
-    
-    return createdGroups;
-  } catch (error) {
-    console.error('Error creating tab groups from categories:', error);
-    return createdGroups;
   }
 }
 

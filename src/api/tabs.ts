@@ -9,46 +9,31 @@ export const getUngroupedTabs = (): Promise<chrome.tabs.Tab[]> => {
   return chrome.tabs.query({ ...defaultTabFilters, groupId: chrome.tabGroups.TAB_GROUP_ID_NONE })
 };
 
-const getTabInfo = (tab: chrome.tabs.Tab, index: number): TabProps => {
+const getTabInfo = (tab: chrome.tabs.Tab): TabProps | null => {
+  if (tab.id === undefined) {
+    return null;
+  }
   const url = tab.url || '';
   return {
-    index,
+    id: tab.id,
     title: tab.title || '',
     domain: extractDomain(url),
     path: extractPath(url)
   };
 }
 
-export const getTabInfoList = (tabs: chrome.tabs.Tab[]): TabProps[] => {
-  // Keep original index even for invalid tabs
-  return tabs.map(tab => getTabInfo(tab, tab.index));
+export const getTabProps = (tabs: chrome.tabs.Tab[]): TabProps[] => {
+  return tabs
+    .map(tab => getTabInfo(tab))
+    .filter((tab): tab is TabProps => tab !== null);
 }
 
-export const getTabIdsByIndices = async (tabIndices: number[]): Promise<[number, ...number[]]> => {
-  const allTabs = await chrome.tabs.query({});
-  const tabIds: number[] = [];
-
-  for (const index of tabIndices) {
-    const tab = allTabs.find(tab => tab.index === index);
-    if (tab && tab.id !== undefined) {
-      tabIds.push(tab.id);
-    }
-  }
-
-  if (tabIds.length === 0) {
-    throw new Error('No valid tab IDs found for the given indices');
-  }
-
-  return tabIds as [number, ...number[]];
-}
-
-export const getTitleByIndex = async (tabIndex: [number, ...number[]]): Promise<string[]> => {
-  const allTabs = await chrome.tabs.query({});
+export const getTitleById = async (tabIds: [number, ...number[]]): Promise<string[]> => {
   const titles: string[] = [];
 
-  for (const index of tabIndex) {
-    const tab = allTabs.find(tab => tab.index === index);
-    if (tab && tab.title !== undefined) {
+  for (const id of tabIds) {
+    const tab = await chrome.tabs.get(id);
+    if (tab.title) {
       titles.push(tab.title);
     }
   }

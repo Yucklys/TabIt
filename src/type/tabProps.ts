@@ -3,8 +3,8 @@
  * Uses domain and path instead of full URL to reduce tokens while preserving semantic meaning
  */
 export type TabProps = {
-  index: number;
+  id: number;
   title: string;
-  domain: string;           // Extracted domain (e.g., "github.com")
-  path: string;             // URL path without query params (e.g., "/user/repo")
+  domain: string;
+  path: string;
 };

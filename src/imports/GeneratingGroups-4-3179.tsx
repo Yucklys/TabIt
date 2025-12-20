@@ -181,7 +181,6 @@ function Loading() {
 
 export default function GeneratingGroups({ onNext, selectedMode = "smart", onModeChange }: { onNext?: () => void; selectedMode?: string; onModeChange?: (mode: string) => void }) {
   const handleClick = () => {
-    console.log("See Grouping Results clicked");
     if (onNext) {
       onNext();
     }

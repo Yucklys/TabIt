@@ -11,8 +11,7 @@ import SuggestionFinal from "./imports/Suggestion-5-98-interactive";
 import CustomizeInteractive from "./components/CustomizeInteractive";
 import { getUserSettings, saveUserSettings } from "./api/storage";
 import { type GroupingMode, type Mode, MODES } from "./type/groupingMode";
-import { getAllTabGroups, addTabsToExistingGroup, createTabGroup, deleteTabGroup, createTabGroupFromIds } from "./api/tabGroups";
-import { getTabIdsByIndices } from "./api/tabs";
+import { getAllTabGroups, addTabsToExistingGroup, deleteTabGroup, createTabGroupFromIds } from "./api/tabGroups";
 
 export default function App() {
   const [currentStep, setCurrentStep] = useState(7); // Default to 7, will be set to 1 if startup event occurs
@@ -108,38 +107,19 @@ export default function App() {
             await deleteTabGroup(group.id);
           }
           
-          // Convert all tab indices to stable tab IDs before grouping
-          const categorizedTabIds: { [category: string]: [number, ...number[]] } = {};
-          for (const [category, tabIndices] of Object.entries(categorizedResult)) {
-            if (tabIndices.length > 0) {
-              const tabIds = await getTabIdsByIndices(tabIndices);
-              categorizedTabIds[category] = tabIds;
-            }
-          }
-          
-          // Now create groups using the stable tab IDs
-          for (const [category, tabIds] of Object.entries(categorizedTabIds)) {
+          for (const [category, tabIds] of Object.entries(categorizedResult)) {
             if (tabIds.length > 0) {
               const groupName = modifiedNames?.[category] || category;
               const color = modifiedColors?.[category];
-              
+
               await createTabGroupFromIds(tabIds, groupName, color);
             }
           }
         } else {
-          // Convert all tab indices to stable tab IDs before grouping
-          const categorizedTabIds: { [category: string]: [number, ...number[]] } = {};
-          for (const [category, tabIndices] of Object.entries(categorizedResult)) {
-            if (tabIndices.length > 0) {
-              const tabIds = await getTabIdsByIndices(tabIndices);
-              categorizedTabIds[category] = tabIds;
-            }
-          }
-          
           const existingGroups = await getAllTabGroups();
           const existingGroupNames = new Set(existingGroups.map(g => g.title).filter(Boolean));
-          
-          for (const [category, tabIds] of Object.entries(categorizedTabIds)) {
+
+          for (const [category, tabIds] of Object.entries(categorizedResult)) {
             if (tabIds.length > 0) {
               // Use modified name if provided, otherwise use original category
               const originalCategory = category;

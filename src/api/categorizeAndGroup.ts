@@ -1,43 +1,37 @@
 import { categorizeTabsBatch } from './ai';
-import { getTabInfoList, getTitleByIndex } from './tabs';
+import { getTabProps, getTitleById } from './tabs';
 
 type Tab = chrome.tabs.Tab;
 
 /**
  * Core categorization logic shared by all grouping modes
- * Returns categorized tabs with their indices
+ * Returns categorized tabs with their IDs
  */
 export async function categorizeAndGroup(
-  tabs: Tab[], 
+  tabs: Tab[],
   existingGroups: string[] = []
 ): Promise<{ [category: string]: [number, ...number[]] }> {
-  const startTime = Date.now();
-
-  const tabInfoList = getTabInfoList(tabs);
+  const tabInfoList = getTabProps(tabs);
   console.log('Total tab number:', tabInfoList.length)
 
   const categorizedTabs = await categorizeTabsBatch(tabInfoList, existingGroups);
-  
+
   console.log('Raw AI categorized response:', categorizedTabs);
-  
+
   const categorizedResult: { [category: string]: [number, ...number[]] } = {};
   for (const group of categorizedTabs) {
     if (!categorizedResult[group.CategoryName]) {
-      categorizedResult[group.CategoryName] = group.indices;
+      categorizedResult[group.CategoryName] = group.ids;
     } else {
-      categorizedResult[group.CategoryName].push(...group.indices);
+      categorizedResult[group.CategoryName].push(...group.ids);
     }
   }
-  
+
   const categorizedTitles: { [category: string]: string[] } = {};
-  for (const [category, indices] of Object.entries(categorizedResult)) {
-    categorizedTitles[category] = await getTitleByIndex(indices);
+  for (const [category, ids] of Object.entries(categorizedResult)) {
+    categorizedTitles[category] = await getTitleById(ids);
   }
   console.log('Categorized Titles:', categorizedTitles);
-  
-  const endTime = Date.now();
-  const runTime = (endTime - startTime) / 1000;
-  console.log(`Completed in ${runTime.toFixed(2)}s`);
-  
+
   return categorizedResult;
 }

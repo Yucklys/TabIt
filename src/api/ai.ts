@@ -7,7 +7,7 @@ const schema = {
     "type": "object",
     "properties": {
       "CategoryName": { "type": "string" },
-      "indices": {
+      "ids": {
         "type": "array",
         "items": { "type": "number" }
       }
@@ -26,7 +26,7 @@ export const initSession = async () => {
 
         Requirements:
         - CategoryName: 1-2 words only.
-        - Each tab belongs to exactly one category, all tab index must appear only once.
+        - Each tab belongs to exactly one category, all tab IDs must appear only once.
         - Each category must have at least one tab.
         - CRITICAL: All tabs from the same domain MUST be placed in the same category. Never split tabs from the same domain into different categories.`
       }
@@ -104,20 +104,20 @@ ${customGroups.join(', ')}. You MUST ONLY use these exact category names. Do not
 /**
  * Generate task instruction content
  */
-const createPrompt = (tabsInfo: string, tabIndices: number[]): string => {
+const createPrompt = (tabsInfo: string, tabIds: number[]): string => {
   return `Analyze these browser tabs and group them:
 ${tabsInfo}
 
-CRITICAL: You must categorize ALL ${tabIndices.length} tabs listed above. 
-Required tab indices: ${tabIndices.join(', ')}
-Every single one of these indices MUST appear exactly once in your response.
-Do not skip or omit any tab indices.`;
+CRITICAL: You must categorize ALL ${tabIds.length} tabs listed above.
+Required tab IDs: ${tabIds.join(', ')}
+Every single one of these tab IDs MUST appear exactly once in your response.
+Do not skip or omit any tab IDs.`;
 };
 
 /**
  * Parse AI response and retrieve categories from the structured response
  */
-const parseAIResponse = (response: string): Array<{CategoryName: string, indices: [number, ...number[]]}> => {
+const parseAIResponse = (response: string): Array<{CategoryName: string, ids: [number, ...number[]]}> => {
   const parsed = JSON.parse(response);
   return parsed;
 };
@@ -157,13 +157,13 @@ ${existingGroups.join(', ')}`;
 export const categorizeTabsBatch = async (
   tabs: TabProps[],
   existingGroups: string[]
-): Promise<Array<{CategoryName: string, indices: [number, ...number[]]}>> => {
-  const tabsInfo = tabs.map((tab) => `${tab.index}: ${tab.title} | ${tab.domain}${tab.path}`).join('\n');
-  
+): Promise<Array<{CategoryName: string, ids: [number, ...number[]]}>> => {
+  const tabsInfo = tabs.map((tab) => `${tab.id}: ${tab.title} | ${tab.domain}${tab.path}`).join('\n');
+
   const customPrompt = await getCustomPrompt();
   const customGroups = await getCustomGroups();
   const tabRange = await getTabRange();
-  
+
   // Log custom prompt usage
   if (customPrompt) {
     console.log('Using custom prompt:', customPrompt);
@@ -172,23 +172,23 @@ export const categorizeTabsBatch = async (
     console.log('Using custom groups:', customGroups);
   }
   console.log('Using tab range:', tabRange);
-  
+
   // Build structured prompt using role-based message array format
   // System context is now set in initialPrompts during session creation
   const messages: LanguageModelMessage[] = [];
-  
+
   // Add custom instructions message if provided
   const customInstructionsMsg = createCustomInstructionsMessage(customPrompt);
   if (customInstructionsMsg) {
     messages.push(customInstructionsMsg);
   }
-  
+
   // Add preferred categories message if provided
   const preferredCategoriesMsg = createPreferredCategoriesMessage(customGroups);
   if (preferredCategoriesMsg) {
     messages.push(preferredCategoriesMsg);
   }
-  
+
   // Add constraints message (user input)
   const constraintsMsg = createConstraintsMessage(tabRange, existingGroups);
   messages.push(constraintsMsg);
@@ -196,8 +196,8 @@ export const categorizeTabsBatch = async (
   // ============================================
   // Send structured prompt
   // ============================================
-  const tabIndices = tabs.map(tab => tab.index);
-  const promptText = createPrompt(tabsInfo, tabIndices);
+  const tabIds = tabs.map(tab => tab.id);
+  const promptText = createPrompt(tabsInfo, tabIds);
   const response = await prompt(messages, promptText);
 
   try {
@@ -205,10 +205,10 @@ export const categorizeTabsBatch = async (
   } catch (error) {
     console.error('Failed to parse AI response as JSON:', response);
     console.error('Parse error:', error);
-    
-    // Fallback: assign "General" to all tabs using actual indices
-    const allIndices = tabs.map(tab => tab.index);
-    return [{CategoryName: 'General', indices: allIndices as [number, ...number[]]}];
+
+    // Fallback: assign "General" to all tabs using actual tab IDs
+    const allIds = tabs.map(tab => tab.id);
+    return [{CategoryName: 'General', ids: allIds as [number, ...number[]]}];
   }
 };
 
