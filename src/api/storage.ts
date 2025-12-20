@@ -8,6 +8,7 @@ export interface UserSettings {
   customGroups?: string[];
   selectedMode?: GroupingMode;
   tabRange?: [number, number];
+  similarityThreshold?: number;
 }
 
 export async function saveUserSettings(settings: Partial<UserSettings>): Promise<void> {
@@ -15,12 +16,13 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
 }
 
 export async function getUserSettings(): Promise<UserSettings> {
-  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'selectedMode', 'tabRange']);
+  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'selectedMode', 'tabRange', 'similarityThreshold']);
   return {
     customPrompt: result.customPrompt || '',
     customGroups: result.customGroups || [],
     selectedMode: result.selectedMode || 'smart',
-    tabRange: result.tabRange || [1, 6]
+    tabRange: result.tabRange || [1, 6],
+    similarityThreshold: result.similarityThreshold ?? 0.7
   };
 }
 
@@ -58,4 +60,13 @@ export async function getSelectedMode(): Promise<GroupingMode> {
 
 export async function setSelectedMode(mode: GroupingMode): Promise<void> {
   await chrome.storage.local.set({ selectedMode: mode });
+}
+
+export async function getSimilarityThreshold(): Promise<number> {
+  const result = await chrome.storage.local.get('similarityThreshold');
+  return result.similarityThreshold ?? 0.7;
+}
+
+export async function setSimilarityThreshold(threshold: number): Promise<void> {
+  await chrome.storage.local.set({ similarityThreshold: threshold });
 }

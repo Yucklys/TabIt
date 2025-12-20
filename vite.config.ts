@@ -65,7 +65,15 @@ export default defineConfig({
     outDir: 'build',
     rollupOptions: {
       input: {
-        main: './index.html'
+        main: './index.html',
+        similarityWorker: './src/workers/similarityWorker.ts'
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          return chunkInfo.name === 'similarityWorker'
+            ? 'similarityWorker.js'
+            : 'assets/[name]-[hash].js';
+        }
       }
     }
   }

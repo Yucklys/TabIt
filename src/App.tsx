@@ -39,12 +39,16 @@ export default function App() {
 
   // Listen for categorization completion in session storage
   useEffect(() => {
-    const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+    const handleStorageChange = async (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area === 'session' && changes.categorizationStatus) {
         const status = changes.categorizationStatus.newValue;
-        
-        if ((status === 'completed' || status === 'no-tabs') && changes.categorizedResult) {
-          setCategorizedResult(changes.categorizedResult.newValue as { [category: string]: [number, ...number[]] });
+
+        if (status === 'completed' || status === 'no-tabs') {
+          // Read categorizedResult from storage directly (might not be in changes on second run)
+          const storageData = await chrome.storage.session.get('categorizedResult');
+          const result = storageData.categorizedResult as { [category: string]: [number, ...number[]] };
+
+          setCategorizedResult(result);
           setCurrentStep(5); // Jump to suggestion step
         } else if (status === 'error') {
           console.error('Categorization failed:', changes.categorizationError?.newValue);

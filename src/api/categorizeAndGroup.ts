@@ -1,5 +1,6 @@
-import { categorizeTabsBatch } from './ai';
 import { getTabProps, getTitleById } from './tabs';
+import { clusterAndGroup as runClustering } from './clustering/clusteringPipeline';
+import { getSimilarityThreshold, getTabRange } from './storage';
 
 type Tab = chrome.tabs.Tab;
 
@@ -14,18 +15,14 @@ export async function categorizeAndGroup(
   const tabInfoList = getTabProps(tabs);
   console.log('Total tab number:', tabInfoList.length)
 
-  const categorizedTabs = await categorizeTabsBatch(tabInfoList, existingGroups);
+  // Get clustering settings
+  const tabRange = await getTabRange();
+  const similarityThreshold = await getSimilarityThreshold();
 
-  console.log('Raw AI categorized response:', categorizedTabs);
+  // Run clustering pipeline
+  const categorizedResult = await runClustering(tabInfoList, tabRange, similarityThreshold);
 
-  const categorizedResult: { [category: string]: [number, ...number[]] } = {};
-  for (const group of categorizedTabs) {
-    if (!categorizedResult[group.CategoryName]) {
-      categorizedResult[group.CategoryName] = group.ids;
-    } else {
-      categorizedResult[group.CategoryName].push(...group.ids);
-    }
-  }
+  console.log('Clustering result:', categorizedResult);
 
   const categorizedTitles: { [category: string]: string[] } = {};
   for (const [category, ids] of Object.entries(categorizedResult)) {

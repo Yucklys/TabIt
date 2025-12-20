@@ -17,5 +17,11 @@
 	"tabs",
 	"tabGroups",
 	"storage"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["similarityWorker.js"],
+      "matches": ["<all_urls>"]
+    }
   ]
 }
