@@ -18,6 +18,10 @@
 	"tabGroups",
 	"storage"
   ],
+  "background": {
+    "service_worker": "serviceWorker.js",
+    "type": "module"
+  },
   "web_accessible_resources": [
     {
       "resources": ["similarityWorker.js"],

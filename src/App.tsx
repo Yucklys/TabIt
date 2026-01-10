@@ -9,7 +9,7 @@ import GeneratingGroupsComplete from "./imports/GeneratingGroups-4-3179";
 import Suggestion from "./imports/Suggestion";
 import SuggestionFinal from "./imports/Suggestion-5-98-interactive";
 import CustomizeInteractive from "./components/CustomizeInteractive";
-import { getUserSettings, saveUserSettings } from "./api/storage";
+import { getUserSettings, saveUserSettings, setAutoGroupingEnabled, setGroupCategories } from "./api/storage";
 import { type GroupingMode, MODES } from "./type/groupingMode";
 import { getAllTabGroups, addTabsToExistingGroup, deleteTabGroup, createTabGroupFromIds } from "./api/tabGroups";
 
@@ -142,8 +142,21 @@ export default function App() {
             }
           }
         }
-        
+
         console.log("Tab groups created successfully");
+
+        // Enable auto-grouping and store category mapping
+        await setAutoGroupingEnabled(true);
+
+        // Build category mapping with actual names used (modified or original)
+        const categoryMapping: { [category: string]: number[] } = {};
+        for (const [category, tabIds] of Object.entries(categorizedResult)) {
+          const groupName = modifiedNames?.[category] || category;
+          categoryMapping[groupName] = tabIds as number[];
+        }
+        await setGroupCategories(categoryMapping);
+
+        console.log("Auto-grouping enabled");
         setCurrentStep(7);
       } catch (error) {
         console.error("Error creating tab groups:", error);

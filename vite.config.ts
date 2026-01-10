@@ -66,13 +66,18 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './index.html',
-        similarityWorker: './src/workers/similarityWorker.ts'
+        similarityWorker: './src/workers/similarityWorker.ts',
+        serviceWorker: './src/background/serviceWorker.ts'
       },
       output: {
         entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'similarityWorker'
-            ? 'similarityWorker.js'
-            : 'assets/[name]-[hash].js';
+          if (chunkInfo.name === 'similarityWorker') {
+            return 'similarityWorker.js';
+          }
+          if (chunkInfo.name === 'serviceWorker') {
+            return 'serviceWorker.js';
+          }
+          return 'assets/[name]-[hash].js';
         }
       }
     }

@@ -9,6 +9,8 @@ export interface UserSettings {
   selectedMode?: GroupingMode;
   tabRange?: [number, number];
   similarityThreshold?: number;
+  autoGroupingEnabled?: boolean;
+  groupCategories?: { [category: string]: number[] };
 }
 
 export async function saveUserSettings(settings: Partial<UserSettings>): Promise<void> {
@@ -69,4 +71,22 @@ export async function getSimilarityThreshold(): Promise<number> {
 
 export async function setSimilarityThreshold(threshold: number): Promise<void> {
   await chrome.storage.local.set({ similarityThreshold: threshold });
+}
+
+export async function getAutoGroupingEnabled(): Promise<boolean> {
+  const result = await chrome.storage.local.get('autoGroupingEnabled');
+  return result.autoGroupingEnabled === true;
+}
+
+export async function setAutoGroupingEnabled(enabled: boolean): Promise<void> {
+  await chrome.storage.local.set({ autoGroupingEnabled: enabled });
+}
+
+export async function getGroupCategories(): Promise<{ [category: string]: number[] } | null> {
+  const result = await chrome.storage.local.get('groupCategories');
+  return result.groupCategories || null;
+}
+
+export async function setGroupCategories(categories: { [category: string]: number[] }): Promise<void> {
+  await chrome.storage.local.set({ groupCategories: categories });
 }
