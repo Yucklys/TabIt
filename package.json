@@ -45,7 +45,8 @@
     "recharts": "^3.4.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "3.4.0",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "vite-plugin-static-copy": "^3.1.4"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
