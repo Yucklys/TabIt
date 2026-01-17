@@ -1,83 +1,298 @@
 <script lang="ts">
-  import * as Item from "$lib/components/ui/item/index";
   import * as ContextMenu from "$lib/components/ui/context-menu/index";
+  import { EllipsisVertical, ArrowRight } from "@lucide/svelte";
+
+  interface Tab {
+    id: string;
+    title: string;
+    favicon?: string;
+    lastAccessTime: number; // Unix timestamp in milliseconds
+  }
 
   interface Props {
     name: string;
     tabCount: number;
+    color?: string;
+    tabs?: Tab[];
   }
-  
-  let { name, tabCount }: Props = $props();
-  
+
+  let { name, tabCount, color = "#ff4f4f", tabs = [] }: Props = $props();
+
+  let isExpanded = $state(false);
+
+  // Generate human-readable timestamp from lastAccessTime
+  function formatTimestamp(lastAccessTime: number): string {
+    const now = Date.now();
+    const diffMs = now - lastAccessTime;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}min${diffMins > 1 ? "s" : ""} ago`;
+    if (diffHours < 24) return `${diffHours}hr${diffHours > 1 ? "s" : ""} ago`;
+    return `${diffDays}day${diffDays > 1 ? "s" : ""} ago`;
+  }
+
+  // Sort tabs by last access time in descending order (most recent first)
+  const sortedTabs = $derived(
+    [...tabs].sort((a, b) => b.lastAccessTime - a.lastAccessTime)
+  );
+
   const handleRename = () => {
     console.log('Rename group:', name);
     // TODO: Implement rename functionality
   };
-  
+
   const handleChangeColor = () => {
     console.log('Change color for group:', name);
     // TODO: Implement color change functionality
   };
-  
+
   const handleUngroup = () => {
     console.log('Ungroup:', name);
     // TODO: Implement ungroup functionality
   };
 
-  // Function to get color based on count ranges
-  function getColorFromCount(count: number) {
-    if (count <= 3) return "#03b151"; // Green
-    if (count <= 7) return "#0486ff"; // Blue  
-    if (count <= 12) return "#ffab04"; // Orange
-    return "#ff4f4f"; // Red
-  }
+  const toggleExpand = () => {
+    isExpanded = !isExpanded;
+  };
 
-  const badgeColor = $derived(getColorFromCount(tabCount));
-  
-  // Calculate dynamic height: min 28px to max 60px based on tabCount
-  // Linear interpolation: height = 28 + (60-28) * (clamp(tabCount, 1, 10) - 1) / (10 - 1)
-  const badgeHeight = $derived.by(() => {
-    const clampedCount = Math.max(1, Math.min(10, tabCount));
-    const minHeight = 20;
-    const maxHeight = 40;
-    return Math.floor(minHeight + ((maxHeight - minHeight) * (clampedCount - 1)) / (10 - 1));
-  });
+  const handleTabClick = (tabId: string) => {
+    console.log('Navigate to tab:', tabId);
+    // TODO: Implement tab navigation
+  };
 </script>
 
-<ContextMenu.Root>
-  <ContextMenu.Trigger>
-    <Item.Root 
-      variant="outline"
-    >
-      <!-- Tab count badge as media -->
-      <Item.Media
-        class="w-[28px] rounded-sm border-0 bg-[{badgeColor}]"
-        style="height: {badgeHeight}px"
-      >
-        <span class="text-[12px] text-white font-medium">
-          {tabCount}
-        </span>
-      </Item.Media>
-        
-      <!-- Group name as content -->
-      <Item.Content>
-        <Item.Title class="text-[14px]">
-          {name}
-        </Item.Title>
-      </Item.Content>
-    </Item.Root>
-  </ContextMenu.Trigger>
-  
-  <ContextMenu.Content>
-    <ContextMenu.Item onclick={handleRename}>
-      Rename
-    </ContextMenu.Item>
-    <ContextMenu.Item onclick={handleChangeColor}>
-      Change color
-    </ContextMenu.Item>
-    <ContextMenu.Separator />
-    <ContextMenu.Item variant="destructive" onclick={handleUngroup}>
-      Ungroup
-    </ContextMenu.Item>
-  </ContextMenu.Content>
-</ContextMenu.Root>
+<div class="group-container">
+  <button class="group-item" onclick={toggleExpand}>
+    <!-- Colored badge -->
+    <div
+      class="badge"
+      style="background-color: {color}"
+    ></div>
+
+    <!-- Group name -->
+    <span class="group-name">{name}</span>
+
+    <!-- Tab count -->
+    <span class="tab-count">{tabCount}</span>
+
+    <!-- Three-dot menu -->
+    <ContextMenu.Root>
+      <ContextMenu.Trigger>
+        <button
+          class="menu-button"
+          aria-label="Group options"
+          onclick={(e) => e.stopPropagation()}
+        >
+          <EllipsisVertical size={16} />
+        </button>
+      </ContextMenu.Trigger>
+
+      <ContextMenu.Content>
+        <ContextMenu.Item onclick={handleRename}>
+          Rename
+        </ContextMenu.Item>
+        <ContextMenu.Item onclick={handleChangeColor}>
+          Change color
+        </ContextMenu.Item>
+        <ContextMenu.Separator />
+        <ContextMenu.Item variant="destructive" onclick={handleUngroup}>
+          Ungroup
+        </ContextMenu.Item>
+      </ContextMenu.Content>
+    </ContextMenu.Root>
+  </button>
+
+  {#if isExpanded && sortedTabs.length > 0}
+    <div class="tabs-list">
+      {#each sortedTabs as tab, index (tab.id)}
+        <button
+          class="tab-item"
+          class:highlighted={index === 0}
+          onclick={() => handleTabClick(tab.id)}
+        >
+          <div class="tab-favicon">
+            {#if tab.favicon}
+              <img src={tab.favicon} alt="" width="20" height="20" />
+            {:else}
+              <div class="favicon-placeholder"></div>
+            {/if}
+          </div>
+
+          <span class="tab-title">{tab.title}</span>
+
+          <span class="tab-timestamp">{formatTimestamp(tab.lastAccessTime)}</span>
+
+          <ArrowRight size={20} class="tab-arrow" />
+        </button>
+      {/each}
+    </div>
+  {/if}
+</div>
+
+<style>
+  .group-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .group-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: white;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .group-item:hover {
+    background: #f9fafb;
+  }
+
+  .badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .group-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 400;
+    color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tab-count {
+    font-size: 14px;
+    font-weight: 400;
+    color: #6b7280;
+    margin-right: 8px;
+    background: #f3f4f6;
+    padding: 4px 12px;
+    border-radius: 8px;
+  }
+
+  .menu-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .menu-button:hover {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  .tabs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    margin-top: -12px;
+    padding-top: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .tabs-list::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .tabs-list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tabs-list::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+
+  .tabs-list::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+
+  .tab-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .tab-item:hover {
+    background: #f9fafb;
+  }
+
+  .tab-item.highlighted {
+    background: #eff6ff;
+  }
+
+  .tab-favicon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .favicon-placeholder {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: #e5e7eb;
+  }
+
+  .tab-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 400;
+    color: #111827;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tab-timestamp {
+    font-size: 12px;
+    font-weight: 400;
+    color: #9ca3af;
+    margin-right: 8px;
+  }
+
+  .tab-item :global(.tab-arrow) {
+    color: #3b82f6;
+    flex-shrink: 0;
+  }
+</style>

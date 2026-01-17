@@ -1,18 +1,11 @@
 <script lang="ts">
-  import * as Select from "$lib/components/ui/select/index";
-  import { MODES, type GroupingMode } from "$type/groupingMode";
+  import { Settings } from "@lucide/svelte";
 
-  let selectedMode = $state<GroupingMode>("smart");
-
-  const groupingModes = Object.values(MODES).map((mode) => ({
-    value: mode.id,
-    label: mode.name,
-  }));
-
-  const selectedLabel = $derived(MODES[selectedMode].name);
+  // Default to aggressive mode
+  export const defaultMode = "aggressive";
 </script>
 
-<div class="flex items-center justify-between">
+<div class="flex items-center justify-between mb-6">
   <div class="flex items-center gap-3">
     <!-- Tabit logo -->
     <div class="relative w-[19px] h-[19px]">
@@ -32,21 +25,28 @@
     <h1>TabIt</h1>
   </div>
 
-  <Select.Root
-    type="single"
-    onValueChange={(newMode) => (selectedMode = newMode as GroupingMode)}
-    items={groupingModes}
-    bind:value={selectedMode}
-  >
-    <Select.Trigger>
-      Mode: {selectedLabel}
-    </Select.Trigger>
-    <Select.Content>
-      {#each groupingModes as mode}
-        <Select.Item value={mode.value} label={mode.label}>
-          {mode.label}
-        </Select.Item>
-      {/each}
-    </Select.Content>
-  </Select.Root>
+  <button class="settings-icon" aria-label="Settings">
+    <Settings size={20} />
+  </button>
 </div>
+
+<style>
+  .settings-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+
+  .settings-icon:hover {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+</style>

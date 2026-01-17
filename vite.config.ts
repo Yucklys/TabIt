@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'node:path';
 
@@ -8,14 +7,14 @@ import path from 'node:path';
 export default defineConfig({
   plugins: [
     svelte(),
-    tailwindcss(),
-    viteStaticCopy({
-      targets: [
-        { src: 'public/manifest.json', dest: '.' },
-        { src: 'public/TabIt*.png', dest: '.' }
-      ]
-    })
+    tailwindcss()
   ],
+  server: {
+    hmr: true,
+    watch: {
+      usePolling: true
+    }
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
