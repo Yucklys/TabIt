@@ -4,12 +4,7 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import * as ButtonGroup from "$lib/components/ui/button-group/index";
   import * as Card from "$lib/components/ui/card/index";
-  import { Label } from "$lib/components/ui/label/index";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
-
-  // Image assets from Figma
-  const img =
-    "https://www.figma.com/api/mcp/asset/d9bcebb5-d999-46a6-9526-85c1703b750a";
 
   const now = Date.now();
 
@@ -63,12 +58,12 @@
 </script>
 
 <main>
-  <Card.Root class="w-[420px] p-8">
+  <Card.Root class="w-[420px] h-[600px] p-8 flex flex-col">
     <!-- Header logo and title -->
     <Header/>
 
     <!-- Tab Groups Header -->
-    <div class="mb-6">
+    <div class="mb-4 shrink-0">
       <h2 class="text-[16px] font-medium text-[#111827] mb-1">Tab Groups</h2>
       <p class="text-[12px] text-[#9ca3af] font-normal">
         {groups.length} {groups.length === 1 ? 'group' : 'groups'} active
@@ -76,7 +71,7 @@
     </div>
 
     <!-- Groups list -->
-    <ScrollArea class="h-[300px] mb-6">
+    <ScrollArea class="flex-1 min-h-0">
       <div class="space-y-4 pr-4">
         {#each groups as group, index (group.name + index)}
           <Group
@@ -90,7 +85,7 @@
     </ScrollArea>
 
     <!-- Action buttons using ButtonGroup -->
-    <ButtonGroup.Root orientation="vertical" class="w-full">
+    <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
       <Button variant="default">Confirm Grouping</Button>
       <Button variant="outline">Customize</Button>
     </ButtonGroup.Root>
