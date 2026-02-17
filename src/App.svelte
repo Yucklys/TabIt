@@ -1,6 +1,7 @@
 <script lang="ts">
   import './app.css';
   import SuggestionPage from './routes/suggestion/+page.svelte';
+  import CustomizePage from './routes/customize/+page.svelte';
 
   // Simple routing for Chrome extension
   let currentRoute = $state('suggestion');
@@ -12,13 +13,15 @@
 
 <main>
   {#if currentRoute === 'suggestion'}
-    <SuggestionPage />
+    <SuggestionPage {navigate} />
+  {:else if currentRoute === 'customize'}
+    <CustomizePage {navigate} />
   {:else}
     <!-- Default/home route -->
     <div class="flex items-center justify-center min-h-screen">
       <div class="text-center">
         <h1 class="text-2xl font-bold mb-4">Tabit</h1>
-        <button 
+        <button
           class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           onclick={() => navigate('suggestion')}
         >

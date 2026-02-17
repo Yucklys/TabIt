@@ -104,3 +104,7 @@ bun --hot ./index.ts
 ```
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.md`.
+
+## UI Components
+
+Check https://www.shadcn-svelte.com/llms.txt for available components in shadcn-svelte.

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as ContextMenu from "$lib/components/ui/context-menu/index";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index";
   import { EllipsisVertical, ArrowRight } from "@lucide/svelte";
 
   interface Tab {
@@ -79,30 +79,28 @@
     <span class="tab-count">{tabCount}</span>
 
     <!-- Three-dot menu -->
-    <ContextMenu.Root>
-      <ContextMenu.Trigger>
-        <button
-          class="menu-button"
-          aria-label="Group options"
-          onclick={(e) => e.stopPropagation()}
-        >
-          <EllipsisVertical size={16} />
-        </button>
-      </ContextMenu.Trigger>
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger
+        class="menu-button"
+        aria-label="Group options"
+        onclick={(e) => e.stopPropagation()}
+      >
+        <EllipsisVertical size={16} />
+      </DropdownMenu.Trigger>
 
-      <ContextMenu.Content>
-        <ContextMenu.Item onclick={handleRename}>
+      <DropdownMenu.Content>
+        <DropdownMenu.Item onclick={handleRename}>
           Rename
-        </ContextMenu.Item>
-        <ContextMenu.Item onclick={handleChangeColor}>
+        </DropdownMenu.Item>
+        <DropdownMenu.Item onclick={handleChangeColor}>
           Change color
-        </ContextMenu.Item>
-        <ContextMenu.Separator />
-        <ContextMenu.Item variant="destructive" onclick={handleUngroup}>
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item variant="destructive" onclick={handleUngroup}>
           Ungroup
-        </ContextMenu.Item>
-      </ContextMenu.Content>
-    </ContextMenu.Root>
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   </button>
 
   {#if isExpanded && sortedTabs.length > 0}
@@ -151,6 +149,9 @@
     width: 100%;
     text-align: left;
     cursor: pointer;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
   }
 
   .group-item:hover {
@@ -182,25 +183,6 @@
     background: #f3f4f6;
     padding: 4px 12px;
     border-radius: 8px;
-  }
-
-  .menu-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: transparent;
-    color: #9ca3af;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s;
-  }
-
-  .menu-button:hover {
-    background: #f3f4f6;
-    color: #6b7280;
   }
 
   .tabs-list {

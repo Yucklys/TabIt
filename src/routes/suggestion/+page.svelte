@@ -6,6 +6,12 @@
   import * as Card from "$lib/components/ui/card/index";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
 
+  interface Props {
+    navigate: (route: string) => void;
+  }
+
+  let { navigate }: Props = $props();
+
   const now = Date.now();
 
   const groups = [
@@ -58,7 +64,7 @@
 </script>
 
 <main>
-  <Card.Root class="w-[420px] h-[600px] p-8 flex flex-col">
+  <Card.Root class="w-[420px] h-[600px] p-8 flex flex-col gap-3">
     <!-- Header logo and title -->
     <Header/>
 
@@ -86,8 +92,8 @@
 
     <!-- Action buttons using ButtonGroup -->
     <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
-      <Button variant="default">Confirm Grouping</Button>
-      <Button variant="outline">Customize</Button>
+      <Button variant="default">Smart Regroup</Button>
+      <Button variant="outline" onclick={() => navigate('customize')}>Customize</Button>
     </ButtonGroup.Root>
   </Card.Root>
 </main>
