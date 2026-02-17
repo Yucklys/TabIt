@@ -1,11 +1,12 @@
 <script lang="ts">
   import Group from "$lib/components/Group.svelte";
   import Header from "$lib/components/Header.svelte";
+  import SuggestionSkeleton from "$lib/components/SuggestionSkeleton.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import * as ButtonGroup from "$lib/components/ui/button-group/index";
   import * as Card from "$lib/components/ui/card/index";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
-  import { navigate, Route } from "$lib/router.svelte";
+  import { navigate, getIsLoading, navigateWithLoading, Route } from "$lib/router.svelte";
 
   const now = Date.now();
 
@@ -63,32 +64,42 @@
     <!-- Header logo and title -->
     <Header/>
 
-    <!-- Tab Groups Header -->
-    <div class="mb-4 shrink-0">
-      <h2 class="text-[16px] font-medium text-[#111827] mb-1">Tab Groups</h2>
-      <p class="text-[12px] text-[#9ca3af] font-normal">
-        {groups.length} {groups.length === 1 ? 'group' : 'groups'} active
-      </p>
-    </div>
-
-    <!-- Groups list -->
-    <ScrollArea class="flex-1 min-h-0">
-      <div class="space-y-4 pr-4">
-        {#each groups as group, index (group.name + index)}
-          <Group
-            name={group.name}
-            tabCount={group.tabCount}
-            color={group.color}
-            tabs={group.tabs}
-          />
-        {/each}
+    {#if getIsLoading()}
+      <SuggestionSkeleton />
+    {:else}
+      <!-- Tab Groups Header -->
+      <div class="mb-4 shrink-0">
+        <h2 class="text-[16px] font-medium text-[#111827] mb-1">Tab Groups</h2>
+        <p class="text-[12px] text-[#9ca3af] font-normal">
+          {groups.length} {groups.length === 1 ? 'group' : 'groups'} active
+        </p>
       </div>
-    </ScrollArea>
 
-    <!-- Action buttons using ButtonGroup -->
-    <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
-      <Button variant="default">Smart Regroup</Button>
-      <Button variant="outline" onclick={() => navigate(Route.Customize)}>Customize</Button>
-    </ButtonGroup.Root>
+      <!-- Groups list -->
+      <ScrollArea class="flex-1 min-h-0">
+        <div class="space-y-4 pr-4">
+          {#each groups as group, index (group.name + index)}
+            <Group
+              name={group.name}
+              tabCount={group.tabCount}
+              color={group.color}
+              tabs={group.tabs}
+            />
+          {/each}
+        </div>
+      </ScrollArea>
+    {/if}
+
+    <!-- Action buttons / loading status -->
+    {#if getIsLoading()}
+      <div class="w-full shrink-0 mt-4 flex items-center justify-center py-4">
+        <p class="text-[14px] text-[#9ca3af] font-medium">Work in progress...</p>
+      </div>
+    {:else}
+      <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
+        <Button variant="default" onclick={() => navigateWithLoading(Route.Suggestion)}>Smart Regroup</Button>
+        <Button variant="outline" onclick={() => navigate(Route.Customize)}>Customize</Button>
+      </ButtonGroup.Root>
+    {/if}
   </Card.Root>
 </main>
