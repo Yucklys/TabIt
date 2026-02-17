@@ -5,12 +5,7 @@
   import * as ButtonGroup from "$lib/components/ui/button-group/index";
   import * as Card from "$lib/components/ui/card/index";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
-
-  interface Props {
-    navigate: (route: string) => void;
-  }
-
-  let { navigate }: Props = $props();
+  import { navigate, Route } from "$lib/router.svelte";
 
   const now = Date.now();
 
@@ -93,7 +88,7 @@
     <!-- Action buttons using ButtonGroup -->
     <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
       <Button variant="default">Smart Regroup</Button>
-      <Button variant="outline" onclick={() => navigate('customize')}>Customize</Button>
+      <Button variant="outline" onclick={() => navigate(Route.Customize)}>Customize</Button>
     </ButtonGroup.Root>
   </Card.Root>
 </main>

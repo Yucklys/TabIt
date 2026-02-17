@@ -6,12 +6,7 @@
   import { Label } from "$lib/components/ui/label/index";
   import { Slider } from "$lib/components/ui/slider/index";
   import { ChevronDown } from "@lucide/svelte";
-
-  interface Props {
-    navigate: (route: string) => void;
-  }
-
-  let { navigate }: Props = $props();
+  import { navigate, Route } from "$lib/router.svelte";
 
   // Category state
   const allCategories = [
@@ -151,7 +146,7 @@
     <!-- Action buttons -->
     <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
       <Button variant="default">Confirm Grouping</Button>
-      <Button variant="outline" onclick={() => navigate('suggestion')}>Cancel</Button>
+      <Button variant="outline" onclick={() => navigate(Route.Suggestion)}>Cancel</Button>
     </ButtonGroup.Root>
   </Card.Root>
 </main>

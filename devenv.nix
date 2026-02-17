@@ -8,6 +8,7 @@
   packages = with pkgs; [
     bun
     svelte-language-server
+    typescript-language-server
   ];
 
   # https://devenv.sh/languages/
