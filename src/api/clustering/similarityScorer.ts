@@ -63,14 +63,12 @@ export async function buildSimilarityMatrix(
   }
 
   // Collect all pairs that need to be compared
-  type Pair = { i: number; j: number; group1: DomainGroup; group2: DomainGroup; summary1: string; summary2: string };
+  type Pair = { group1: DomainGroup; group2: DomainGroup; summary1: string; summary2: string };
   const pairs: Pair[] = [];
 
   for (let i = 0; i < domainGroups.length; i++) {
     for (let j = i + 1; j < domainGroups.length; j++) {
       pairs.push({
-        i,
-        j,
         group1: domainGroups[i],
         group2: domainGroups[j],
         summary1: getDomainGroupSummary(domainGroups[i]),

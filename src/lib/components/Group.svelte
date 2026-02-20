@@ -1,9 +1,15 @@
 <script lang="ts">
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index";
   import { EllipsisVertical, ArrowRight } from "@lucide/svelte";
+  import {
+    renameGroup,
+    changeGroupColor,
+    ungroupGroup,
+    activateTab,
+  } from "$lib/groupStore.svelte";
 
   interface Tab {
-    id: string;
+    id: number;
     title: string;
     favicon?: string;
     lastAccessTime: number; // Unix timestamp in milliseconds
@@ -14,9 +20,12 @@
     tabCount: number;
     color?: string;
     tabs?: Tab[];
+    groupId: number;
+    chromeColor?: string;
+    onMutated?: () => Promise<void>;
   }
 
-  let { name, tabCount, color = "#ff4f4f", tabs = [] }: Props = $props();
+  let { name, tabCount, color = "#ff4f4f", tabs = [], groupId, chromeColor, onMutated }: Props = $props();
 
   let isExpanded = $state(false);
 
@@ -39,28 +48,30 @@
     [...tabs].sort((a, b) => b.lastAccessTime - a.lastAccessTime)
   );
 
-  const handleRename = () => {
-    console.log('Rename group:', name);
-    // TODO: Implement rename functionality
+  const handleRename = async () => {
+    const newTitle = prompt('Rename group:', name);
+    if (newTitle && newTitle.trim()) {
+      await renameGroup(groupId, newTitle.trim());
+      await onMutated?.();
+    }
   };
 
-  const handleChangeColor = () => {
-    console.log('Change color for group:', name);
-    // TODO: Implement color change functionality
+  const handleChangeColor = async () => {
+    await changeGroupColor(groupId, chromeColor as chrome.tabGroups.Color | undefined);
+    await onMutated?.();
   };
 
-  const handleUngroup = () => {
-    console.log('Ungroup:', name);
-    // TODO: Implement ungroup functionality
+  const handleUngroup = async () => {
+    await ungroupGroup(groupId);
+    await onMutated?.();
   };
 
   const toggleExpand = () => {
     isExpanded = !isExpanded;
   };
 
-  const handleTabClick = (tabId: string) => {
-    console.log('Navigate to tab:', tabId);
-    // TODO: Implement tab navigation
+  const handleTabClick = async (tabId: number) => {
+    await activateTab(tabId);
   };
 </script>
 

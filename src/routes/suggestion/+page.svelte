@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import Group from "$lib/components/Group.svelte";
   import Header from "$lib/components/Header.svelte";
   import SuggestionSkeleton from "$lib/components/SuggestionSkeleton.svelte";
@@ -7,56 +8,11 @@
   import * as Card from "$lib/components/ui/card/index";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
   import { navigate, getIsLoading, navigateWithLoading, Route } from "$lib/router.svelte";
+  import { getGroups, loadGroups, runGrouping } from "$lib/groupStore.svelte";
 
-  const now = Date.now();
-
-  const groups = [
-    {
-      name: "Group 1: Entertainment",
-      tabCount: 5,
-      color: "#ff4f4f",
-      tabs: [
-        {
-          id: "1",
-          title: "Spotify - Liked Songs",
-          favicon: "https://www.spotify.com/favicon.ico",
-          lastAccessTime: now - 2 * 60 * 1000, // 2 minutes ago
-        },
-        {
-          id: "2",
-          title: "Spotify - Liked Songs",
-          lastAccessTime: now - 5 * 60 * 1000, // 5 minutes ago
-        },
-        {
-          id: "3",
-          title: "Spotify - Liked Songs",
-          lastAccessTime: now - 10 * 60 * 1000, // 10 minutes ago
-        },
-        {
-          id: "4",
-          title: "Spotify - Liked Songs",
-          lastAccessTime: now - 15 * 60 * 1000, // 15 minutes ago
-        },
-        {
-          id: "5",
-          title: "Spotify - Liked Songs",
-          lastAccessTime: now - 20 * 60 * 1000, // 20 minutes ago
-        },
-      ],
-    },
-    {
-      name: "Group 2: News",
-      tabCount: 8,
-      color: "#ffab04",
-      tabs: [],
-    },
-    {
-      name: "Group 3: Shopping",
-      tabCount: 1,
-      color: "#0486ff",
-      tabs: [],
-    },
-  ];
+  onMount(() => {
+    loadGroups();
+  });
 </script>
 
 <main>
@@ -71,21 +27,31 @@
       <div class="mb-4 shrink-0">
         <h2 class="text-[16px] font-medium text-[#111827] mb-1">Tab Groups</h2>
         <p class="text-[12px] text-[#9ca3af] font-normal">
-          {groups.length} {groups.length === 1 ? 'group' : 'groups'} active
+          {getGroups().length} {getGroups().length === 1 ? 'group' : 'groups'} active
         </p>
       </div>
 
       <!-- Groups list -->
       <ScrollArea class="flex-1 min-h-0">
         <div class="space-y-4 pr-4">
-          {#each groups as group, index (group.name + index)}
-            <Group
-              name={group.name}
-              tabCount={group.tabCount}
-              color={group.color}
-              tabs={group.tabs}
-            />
-          {/each}
+          {#if getGroups().length === 0}
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+              <p class="text-[14px] text-[#9ca3af] font-normal">No tab groups yet.</p>
+              <p class="text-[12px] text-[#9ca3af] font-normal mt-1">Click "Smart Regroup" to organize your tabs.</p>
+            </div>
+          {:else}
+            {#each getGroups() as group (group.groupId)}
+              <Group
+                name={group.name}
+                tabCount={group.tabCount}
+                color={group.hexColor}
+                tabs={group.tabs}
+                groupId={group.groupId}
+                chromeColor={group.color}
+                onMutated={loadGroups}
+              />
+            {/each}
+          {/if}
         </div>
       </ScrollArea>
     {/if}
@@ -97,7 +63,7 @@
       </div>
     {:else}
       <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
-        <Button variant="default" onclick={() => navigateWithLoading(Route.Suggestion)}>Smart Regroup</Button>
+        <Button variant="default" onclick={() => navigateWithLoading(Route.Suggestion, runGrouping)}>Smart Regroup</Button>
         <Button variant="outline" onclick={() => navigate(Route.Customize)}>Customize</Button>
       </ButtonGroup.Root>
     {/if}

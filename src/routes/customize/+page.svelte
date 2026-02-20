@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import Header from "$lib/components/Header.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import * as ButtonGroup from "$lib/components/ui/button-group/index";
@@ -7,6 +8,8 @@
   import { Slider } from "$lib/components/ui/slider/index";
   import { ChevronDown } from "@lucide/svelte";
   import { navigate, navigateWithLoading, Route } from "$lib/router.svelte";
+  import { getUserSettings, saveUserSettings } from "$api/storage";
+  import { runGrouping } from "$lib/groupStore.svelte";
 
   // Category state
   const allCategories = [
@@ -20,7 +23,7 @@
     "Email",
   ];
 
-  let selectedCategories = $state<string[]>(["Entertainment", "Research", "Work"]);
+  let selectedCategories = $state<string[]>([]);
   let dropdownOpen = $state(false);
 
   function toggleCategory(category: string) {
@@ -32,8 +35,8 @@
   }
 
   // Slider state
-  let tabCount = $state([2, 8]);
-  let similarity = $state<'low' | 'medium' | 'high'>('medium');
+  let tabCount = $state([1, 6]);
+  let similarity = $state<'low' | 'medium' | 'high'>('high');
 
   const similarityOptions = [
     { label: 'Low', value: 'low' as const, ratio: 0.3 },
@@ -41,8 +44,44 @@
     { label: 'High', value: 'high' as const, ratio: 0.7 },
   ];
 
+  const thresholdToSimilarity: Record<number, 'low' | 'medium' | 'high'> = {
+    0.3: 'low',
+    0.5: 'medium',
+    0.7: 'high',
+  };
+
+  function getSimilarityThreshold(): number {
+    return similarityOptions.find(o => o.value === similarity)?.ratio ?? 0.7;
+  }
+
   // Additional rules
   let additionalRules = $state("");
+
+  onMount(async () => {
+    const settings = await getUserSettings();
+    if (settings.customGroups && settings.customGroups.length > 0) {
+      selectedCategories = settings.customGroups;
+    }
+    if (settings.tabRange) {
+      tabCount = [...settings.tabRange];
+    }
+    if (settings.similarityThreshold != null) {
+      similarity = thresholdToSimilarity[settings.similarityThreshold] ?? 'high';
+    }
+    if (settings.customPrompt) {
+      additionalRules = settings.customPrompt;
+    }
+  });
+
+  async function handleConfirm() {
+    await saveUserSettings({
+      customGroups: selectedCategories,
+      tabRange: [tabCount[0], tabCount[1]] as [number, number],
+      similarityThreshold: getSimilarityThreshold(),
+      customPrompt: additionalRules,
+    });
+    await navigateWithLoading(Route.Suggestion, runGrouping);
+  }
 </script>
 
 <main>
@@ -145,7 +184,7 @@
 
     <!-- Action buttons -->
     <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
-      <Button variant="default" onclick={() => navigateWithLoading(Route.Suggestion)}>Confirm Grouping</Button>
+      <Button variant="default" onclick={handleConfirm}>Confirm Grouping</Button>
       <Button variant="outline" onclick={() => navigate(Route.Suggestion)}>Cancel</Button>
     </ButtonGroup.Root>
   </Card.Root>

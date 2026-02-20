@@ -2,17 +2,6 @@
  * Web Worker for parallel AI similarity scoring
  */
 
-// Type declaration for Chrome AI API in Web Worker context
-declare global {
-  interface AI {
-    languageModel: typeof LanguageModel;
-  }
-
-  interface WorkerGlobalScope {
-    ai: AI;
-  }
-}
-
 const similaritySchema = {
   "type": "object",
   "properties": {
@@ -29,7 +18,7 @@ const similaritySchema = {
  * Initialize AI session for similarity scoring
  */
 async function initSimilaritySession() {
-  return await (self as any as WorkerGlobalScope).ai.languageModel.create({
+  return await LanguageModel.create({
     initialPrompts: [
       {
         role: "system",
