@@ -1,5 +1,7 @@
 import type { Cluster } from './hierarchicalClustering';
 import { getDomainGroupSummary } from './domainGrouper';
+import { getLanguage, type Language } from '../storage';
+
 
 const namingSchema = {
   "type": "object",
@@ -29,7 +31,7 @@ const matchingSchema = {
 /**
  * Initialize AI session for category naming
  */
-async function initNamingSession() {
+async function initNamingSession(lang: Language) {
   return await LanguageModel.create({
     initialPrompts: [
       {
@@ -42,14 +44,16 @@ Guidelines:
 - Focus on the common purpose or topic
 - Avoid generic names like "General" or "Misc"`
       }
-    ]
+    ],
+    expectedInputs: [{ type: "text", languages: ["en", lang] }],
+    expectedOutputs: [{ type: "text", languages: [lang] }]
   });
 }
 
 /**
  * Initialize AI session for category matching
  */
-async function initMatchingSession() {
+async function initMatchingSession(lang: Language) {
   return await LanguageModel.create({
     initialPrompts: [
       {
@@ -61,14 +65,15 @@ Return:
 - confidence: How well the tabs match (0.0-1.0)`
       }
     ],
-    expectedOutputs: [{ "type": "text", "languages": ["en"] }]
+    expectedInputs: [{ type: "text", languages: ["en", lang] }],
+    expectedOutputs: [{ type: "text", languages: [lang] }]
   });
 }
 
 /**
  * Generate a category name from cluster content using AI
  */
-async function generateCategoryName(cluster: Cluster): Promise<string> {
+async function generateCategoryName(cluster: Cluster, lang: Language): Promise<string> {
   const summaries = cluster.domainGroups.map(group => getDomainGroupSummary(group));
 
   const promptText = `Generate a concise 1-2 word category name for this group of browser tabs:
@@ -78,7 +83,7 @@ ${summaries.join('\n\n')}
 What is a good category name that captures the common theme or purpose?`;
 
   try {
-    const session = await initNamingSession();
+    const session = await initNamingSession(lang);
     const response = await session.prompt(promptText, {
       responseConstraint: namingSchema
     });
@@ -102,7 +107,8 @@ What is a good category name that captures the common theme or purpose?`;
 async function matchToCustomCategory(
   cluster: Cluster,
   customGroups: string[],
-  threshold: number = 0.5
+  threshold: number = 0.5,
+  lang: Language = 'en'
 ): Promise<{ name: string; confidence: number } | null> {
   if (!customGroups || !Array.isArray(customGroups) || customGroups.length === 0) {
     return null;
@@ -120,7 +126,7 @@ Predefined categories: ${customGroups.join(', ')}
 Which category best matches these tabs, and how confident are you (0.0-1.0)?`;
 
   try {
-    const session = await initMatchingSession();
+    const session = await initMatchingSession(lang);
     const response = await session.prompt(promptText, {
       responseConstraint: matchingSchema
     });
@@ -155,21 +161,22 @@ export async function nameCluster(
   customGroups: string[] = [],
   matchThreshold: number = 0.6
 ): Promise<string> {
+  const lang = await getLanguage();
   if (customGroups.length === 0) {
     // No custom groups: generate name from content
-    const name = await generateCategoryName(cluster);
+    const name = await generateCategoryName(cluster, lang);
     console.log(`Generated name for cluster ${cluster.id}: "${name}"`);
     return name;
   } else {
     // Custom groups exist: try to match
-    const match = await matchToCustomCategory(cluster, customGroups, matchThreshold);
+    const match = await matchToCustomCategory(cluster, customGroups, matchThreshold, lang);
 
     if (match) {
       console.log(`Matched cluster ${cluster.id} to "${match.name}" (confidence: ${match.confidence.toFixed(2)})`);
       return match.name;
     } else {
       // No good match: generate new name
-      const name = await generateCategoryName(cluster);
+      const name = await generateCategoryName(cluster, lang);
       console.log(`Cluster ${cluster.id} no good match, generated: "${name}"`);
       return name;
     }
@@ -188,7 +195,8 @@ function getClusterTabCount(cluster: Cluster): number {
  */
 async function generateAlternativeName(
   cluster: Cluster,
-  excludedNames: string[]
+  excludedNames: string[],
+  lang: Language = 'en'
 ): Promise<string> {
   const summaries = cluster.domainGroups.map(group => getDomainGroupSummary(group));
 
@@ -202,7 +210,7 @@ ${excludedNames.join(', ')}
 What is a good category name that captures the common theme or purpose?`;
 
   try {
-    const session = await initNamingSession();
+    const session = await initNamingSession(lang);
     const response = await session.prompt(promptText, {
       responseConstraint: namingSchema
     });
@@ -240,24 +248,27 @@ export async function nameClusters(
     confidence: number;
   };
 
+  // Fetch language setting once for all naming operations
+  const lang = await getLanguage();
+
   // Step 1: Get initial names and confidences for all clusters
   const clusterMatches: ClusterMatch[] = [];
 
   for (const cluster of clusters) {
     if (customGroups.length === 0) {
       // No custom groups: generate name from content
-      const name = await generateCategoryName(cluster);
+      const name = await generateCategoryName(cluster, lang);
       clusterMatches.push({ cluster, name, confidence: 1.0 });
       console.log(`Generated name for cluster ${cluster.id}: "${name}"`);
     } else {
       // Custom groups exist: match to them
-      const match = await matchToCustomCategory(cluster, customGroups);
+      const match = await matchToCustomCategory(cluster, customGroups, undefined, lang);
       if (match) {
         clusterMatches.push({ cluster, name: match.name, confidence: match.confidence });
         console.log(`Matched cluster ${cluster.id} to "${match.name}" (confidence: ${match.confidence.toFixed(2)})`);
       } else {
         // No match met threshold, generate name
-        const name = await generateCategoryName(cluster);
+        const name = await generateCategoryName(cluster, lang);
         clusterMatches.push({ cluster, name, confidence: 0.0 });
         console.log(`No match for cluster ${cluster.id}, generated: "${name}"`);
       }
@@ -297,7 +308,7 @@ export async function nameClusters(
       console.log(`Group "${finalName}" would exceed max size (${currentSize} + ${tabCount} > ${maxSize})`);
 
       // Try to match to remaining available custom categories first
-      const fallbackMatch = await matchToCustomCategory(match.cluster, availableCustomGroups);
+      const fallbackMatch = await matchToCustomCategory(match.cluster, availableCustomGroups, undefined, lang);
 
       if (fallbackMatch) {
         finalName = fallbackMatch.name;
@@ -310,7 +321,7 @@ export async function nameClusters(
         const usedNames: string[] = [];
         groupSizes.forEach((value, key) => usedNames.push(key));
 
-        finalName = await generateAlternativeName(match.cluster, usedNames);
+        finalName = await generateAlternativeName(match.cluster, usedNames, lang);
         console.log(`Generated alternative name: "${finalName}"`);
       }
     }
