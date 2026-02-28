@@ -9,50 +9,41 @@ import { getAllTabGroups } from '$api/tabGroups';
  */
 export async function smartGrouping(): Promise<void> {
   try {
-    const tabs = await getUngroupedTabs();
-    const existingGroups = await getAllTabGroups();
-    const existingGroupNames = existingGroups.map(g => g.title ?? "").filter(name => name);
-    
-    console.log('Existing groups:', existingGroupNames);
-    
+    // Get all tabs (not just ungrouped ones) - matching aggressive behavior
+    const allTabs = await chrome.tabs.query({});
+
+    // Filter out chrome:// and chrome-extension:// tabs
+    const tabs = allTabs.filter(tab =>
+      tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')
+    );
+
+    console.log('Smart mode (now Aggressive): Processing all tabs');
+
     // Check if there are any tabs to process
     if (!tabs || tabs.length === 0) {
-      await chrome.storage.session.set({ 
+      await chrome.storage.session.set({
         categorizedResult: {},
         categorizationStatus: 'no-tabs',
-        message: 'No ungrouped tabs found to categorize'
+        message: 'No valid tabs found to categorize'
       });
-      console.log('No ungrouped tabs found for smart mode');
+      console.log('No valid tabs found for smart mode');
       return;
     }
-    
-    // Check if there are existing groups
-    // If yes and there are ungrouped tabs, pass existing group names to AI
-    if (existingGroups.length > 0) {
-      console.log('Smart mode: Found existing groups, will reuse their names');
-      // Pass existing group names to AI so it can reuse them
-      const categorizedResult = await categorizeAndGroup(tabs, existingGroupNames);
-      
-      await chrome.storage.session.set({ 
-        categorizedResult: categorizedResult,
-        categorizationStatus: 'completed'
-      });
-    } else {
-      console.log('Smart mode: No existing groups, will categorize normally');
-      // No existing groups, categorize normally
-      const categorizedResult = await categorizeAndGroup(tabs);
-      
-      await chrome.storage.session.set({ 
-        categorizedResult: categorizedResult,
-        categorizationStatus: 'completed'
-      });
-    }
-    
-    console.log(`Smart mode categorization completed`);
+
+    // Run categorization on ALL tabs, not passing existingGroupNames 
+    // to allow AI full control (Aggressive logic)
+    const categorizedResult = await categorizeAndGroup(tabs);
+
+    await chrome.storage.session.set({
+      categorizedResult: categorizedResult,
+      categorizationStatus: 'completed'
+    });
+
+    console.log(`Smart mode categorization completed (as aggressive full regroup)`);
   } catch (err) {
     if (err instanceof Error) {
       console.error('Error in smart grouping:', err);
-      await chrome.storage.session.set({ 
+      await chrome.storage.session.set({
         categorizationStatus: 'error',
         categorizationError: err.message
       });

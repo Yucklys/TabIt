@@ -34,7 +34,7 @@ export async function clusterAndGroup(
 
   // Phase 3: HAC clustering
   console.log(`\n[Phase 3] Running hierarchical clustering...`);
-  const clusters = hierarchicalClustering(domainGroups, similarityMatrix, similarityThreshold);
+  const clusters = hierarchicalClustering(domainGroups, similarityMatrix, similarityThreshold, tabRange[1]);
 
   // Phase 4: Filter by minimum size
   console.log(`\n[Phase 4] Filtering clusters by minimum size...`);

@@ -34,17 +34,25 @@ function calculateAverageLinkage(
 }
 
 /**
- * Find the pair of clusters with highest similarity
+ * Find the pair of clusters with highest similarity, respecting maxSize
  */
 function findMostSimilarPair(
   clusters: Cluster[],
-  matrix: SimilarityMatrix
+  matrix: SimilarityMatrix,
+  maxSize: number = Infinity
 ): { index1: number; index2: number; similarity: number } | null {
   let maxSimilarity = -1;
   let bestPair: { index1: number; index2: number; similarity: number } | null = null;
 
   for (let i = 0; i < clusters.length; i++) {
+    const sizeI = clusters[i].domainGroups.reduce((sum, g) => sum + g.tabs.length, 0);
+
     for (let j = i + 1; j < clusters.length; j++) {
+      const sizeJ = clusters[j].domainGroups.reduce((sum, g) => sum + g.tabs.length, 0);
+
+      // If merging would exceed maxSize, skip this pair
+      if (sizeI + sizeJ > maxSize) continue;
+
       const similarity = calculateAverageLinkage(clusters[i], clusters[j], matrix);
 
       if (similarity > maxSimilarity) {
@@ -62,14 +70,16 @@ function findMostSimilarPair(
  * @param domainGroups - Array of domain groups to cluster
  * @param matrix - Pairwise similarity matrix
  * @param threshold - Minimum similarity to merge clusters (default 0.5)
+ * @param maxSize - Maximum tabs per cluster (default Infinity)
  * @returns Array of clusters
  */
 export function hierarchicalClustering(
   domainGroups: DomainGroup[],
   matrix: SimilarityMatrix,
-  threshold: number = 0.5
+  threshold: number = 0.5,
+  maxSize: number = Infinity
 ): Cluster[] {
-  console.log(`Starting HAC with ${domainGroups.length} domain groups, threshold: ${threshold}`);
+  console.log(`Starting HAC with ${domainGroups.length} domain groups, threshold: ${threshold}, maxSize: ${maxSize}`);
 
   // Initialize: each domain group is its own cluster
   const clusters: Cluster[] = domainGroups.map((group, index) => ({
@@ -80,8 +90,8 @@ export function hierarchicalClustering(
   let iteration = 0;
 
   while (true) {
-    // Find most similar pair
-    const pair = findMostSimilarPair(clusters, matrix);
+    // Find most similar pair, respecting maxSize
+    const pair = findMostSimilarPair(clusters, matrix, maxSize);
 
     if (!pair || pair.similarity < threshold) {
       console.log(`Stopping HAC: ${pair ? `max similarity ${pair.similarity.toFixed(2)} < threshold ${threshold}` : 'no pairs left'}`);

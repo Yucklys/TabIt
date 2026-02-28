@@ -304,7 +304,7 @@ export async function nameClusters(
 
     // Check if adding to this group would exceed maxSize
     const currentSize = groupSizes.get(finalName) || 0;
-    if (currentSize > maxSize) {
+    if (currentSize + tabCount > maxSize) {
       console.log(`Group "${finalName}" would exceed max size (${currentSize} + ${tabCount} > ${maxSize})`);
 
       // Try to match to remaining available custom categories first

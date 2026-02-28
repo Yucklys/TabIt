@@ -4,25 +4,25 @@ type TabGroup = chrome.tabGroups.TabGroup;
  * Create a tab group with given tab IDs, name, and optional color
  */
 export async function createTabGroupFromIds(
-  tabIds: [number, ...number[]], 
-  groupName: string, 
+  tabIds: [number, ...number[]],
+  groupName: string,
   color?: chrome.tabGroups.Color
 ): Promise<TabGroup | null> {
   try {
     const groupId = await chrome.tabs.group({
       tabIds,
     });
-    
+
     const updateParams: { title: string; color?: chrome.tabGroups.Color } = {
       title: groupName.trim()
     };
-    
+
     if (color) {
       updateParams.color = color;
     }
-    
+
     await chrome.tabGroups.update(groupId, updateParams);
-  
+
     return await chrome.tabGroups.get(groupId);
   } catch (error) {
     console.error('Error creating tab group from IDs:', error);
@@ -34,19 +34,19 @@ export async function createTabGroupFromIds(
  * Add tabs to an existing group by group ID using tab IDs
  */
 export async function addTabsToExistingGroup(
-  groupId: number, 
+  groupId: number,
   tabIds: [number, ...number[]],
   color?: chrome.tabGroups.Color
 ): Promise<TabGroup | null> {
   try {
     // Add new tabs to the existing group
     await chrome.tabs.group({ groupId, tabIds });
-    
+
     // Update color if provided
     if (color) {
       await chrome.tabGroups.update(groupId, { color });
     }
-    
+
     return await chrome.tabGroups.get(groupId);
   } catch (error) {
     console.error('Error adding tabs to existing group:', error);
@@ -104,14 +104,27 @@ export async function getAllTabGroupsWithCounts(): Promise<{ group: TabGroup; co
 export async function deleteTabGroup(groupId: number): Promise<boolean> {
   try {
     const tabs = await chrome.tabs.query({ groupId });
-    for (const tab of tabs) {
-      if (tab.id !== undefined) {
-        await chrome.tabs.ungroup(tab.id);
-      }
+    const tabIds = tabs.map(t => t.id).filter((id): id is number => id !== undefined);
+    if (tabIds.length > 0) {
+      await chrome.tabs.ungroup(tabIds as [number, ...number[]]);
     }
     return true;
   } catch (error) {
     console.error('Error deleting tab group:', error);
     return false;
+  }
+}
+
+/**
+ * Ungroup all tabs from all existing groups (effectively deleting all groups)
+ */
+export async function ungroupAllGroups(): Promise<void> {
+  try {
+    const groups = await chrome.tabGroups.query({});
+    for (const group of groups) {
+      await deleteTabGroup(group.id);
+    }
+  } catch (error) {
+    console.error('Error ungrouping all groups:', error);
   }
 }
