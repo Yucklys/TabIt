@@ -2,7 +2,7 @@
 	"$schema": "https://ui.shadcn.com/schema.json",
 	"tailwind": {
 		"css": "src/app.css",
-		"baseColor": "neutral"
+		"baseColor": "cyan"
 	},
 	"aliases": {
 		"components": "$lib/components",

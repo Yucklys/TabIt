@@ -153,9 +153,9 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-border);
     border-radius: 12px;
-    background: white;
+    background: var(--color-card);
     transition: all 0.2s;
     width: 100%;
     text-align: left;
@@ -166,7 +166,7 @@
   }
 
   .group-item:hover {
-    background: #f9fafb;
+    background: var(--color-accent);
   }
 
   .badge {
@@ -180,7 +180,7 @@
     flex: 1;
     font-size: 14px;
     font-weight: 400;
-    color: #111827;
+    color: var(--color-foreground);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -189,9 +189,9 @@
   .tab-count {
     font-size: 14px;
     font-weight: 400;
-    color: #6b7280;
+    color: var(--color-muted-foreground);
     margin-right: 8px;
-    background: #f3f4f6;
+    background: var(--color-muted);
     padding: 4px 12px;
     border-radius: 8px;
   }
@@ -201,8 +201,8 @@
     flex-direction: column;
     gap: 8px;
     padding: 12px;
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
     border-top: none;
     border-radius: 0 0 12px 12px;
     margin-top: -12px;
@@ -221,12 +221,12 @@
   }
 
   .tabs-list::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+    background: var(--color-border);
     border-radius: 3px;
   }
 
   .tabs-list::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
+    background: var(--color-muted-foreground);
   }
 
   .tab-item {
@@ -236,7 +236,7 @@
     padding: 12px;
     border: none;
     border-radius: 8px;
-    background: white;
+    background: var(--color-card);
     transition: all 0.2s;
     width: 100%;
     text-align: left;
@@ -244,11 +244,11 @@
   }
 
   .tab-item:hover {
-    background: #f9fafb;
+    background: var(--color-accent);
   }
 
   .tab-item.highlighted {
-    background: #eff6ff;
+    background: var(--color-accent);
   }
 
   .tab-favicon {
@@ -264,14 +264,14 @@
     width: 20px;
     height: 20px;
     border-radius: 4px;
-    background: #e5e7eb;
+    background: var(--color-muted);
   }
 
   .tab-title {
     flex: 1;
     font-size: 14px;
     font-weight: 400;
-    color: #111827;
+    color: var(--color-foreground);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -280,12 +280,12 @@
   .tab-timestamp {
     font-size: 12px;
     font-weight: 400;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     margin-right: 8px;
   }
 
   .tab-item :global(.tab-arrow) {
-    color: #3b82f6;
+    color: var(--color-primary);
     flex-shrink: 0;
   }
 </style>

@@ -58,52 +58,50 @@
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
           Display Mode
         </Label>
-        <div class="mode-container">
-          <div class="mode-previews">
-            {#each displayModes as mode (mode.value)}
-              <div class="mode-option">
-                <button
-                  class="mode-preview"
-                  class:selected={currentMode === mode.value}
-                  onclick={() => selectDisplayMode(mode.value)}
-                >
-                  {#if mode.value === "light"}
-                    <div class="preview-window preview-light">
-                      <div class="preview-line w-[40px]"></div>
-                      <div class="preview-line w-[30px]"></div>
-                      <div class="preview-line w-[12px]"></div>
+        <div class="mode-previews">
+          {#each displayModes as mode (mode.value)}
+            <div class="mode-option">
+              <button
+                class="mode-preview"
+                class:selected={currentMode === mode.value}
+                onclick={() => selectDisplayMode(mode.value)}
+              >
+                {#if mode.value === "light"}
+                  <div class="preview-window preview-light">
+                    <div class="preview-line w-[40px]"></div>
+                    <div class="preview-line w-[30px]"></div>
+                    <div class="preview-line w-[12px]"></div>
+                  </div>
+                {:else if mode.value === "dark"}
+                  <div class="preview-window preview-dark">
+                    <div class="preview-line-dark w-[40px]"></div>
+                    <div class="preview-line-dark w-[30px]"></div>
+                    <div class="preview-line-dark w-[12px]"></div>
+                  </div>
+                {:else}
+                  <div class="preview-window preview-system">
+                    <div class="preview-half-light">
+                      <div class="preview-line w-[18px]"></div>
+                      <div class="preview-line w-[14px]"></div>
+                      <div class="preview-line w-[6px]"></div>
                     </div>
-                  {:else if mode.value === "dark"}
-                    <div class="preview-window preview-dark">
-                      <div class="preview-line-dark w-[40px]"></div>
-                      <div class="preview-line-dark w-[30px]"></div>
-                      <div class="preview-line-dark w-[12px]"></div>
+                    <div class="preview-half-dark">
+                      <div class="preview-line-dark w-[18px]"></div>
+                      <div class="preview-line-dark w-[14px]"></div>
+                      <div class="preview-line-dark w-[6px]"></div>
                     </div>
-                  {:else}
-                    <div class="preview-window preview-system">
-                      <div class="preview-half-light">
-                        <div class="preview-line w-[18px]"></div>
-                        <div class="preview-line w-[14px]"></div>
-                        <div class="preview-line w-[6px]"></div>
-                      </div>
-                      <div class="preview-half-dark">
-                        <div class="preview-line-dark w-[18px]"></div>
-                        <div class="preview-line-dark w-[14px]"></div>
-                        <div class="preview-line-dark w-[6px]"></div>
-                      </div>
-                    </div>
-                  {/if}
-                </button>
-                <Button
-                  variant={currentMode === mode.value ? "default" : "secondary"}
-                  size="sm"
-                  onclick={() => selectDisplayMode(mode.value)}
-                >
-                  {mode.label}
-                </Button>
-              </div>
-            {/each}
-          </div>
+                  </div>
+                {/if}
+              </button>
+              <Button
+                variant={currentMode === mode.value ? "default" : "secondary"}
+                size="sm"
+                onclick={() => selectDisplayMode(mode.value)}
+              >
+                {mode.label}
+              </Button>
+            </div>
+          {/each}
         </div>
       </div>
 
@@ -144,13 +142,6 @@
 
   .back-button:hover {
     color: var(--color-foreground);
-  }
-
-  .mode-container {
-    border: 0.8px solid var(--color-border);
-    border-radius: 8px;
-    padding: 14px;
-    background: var(--color-card);
   }
 
   .mode-previews {

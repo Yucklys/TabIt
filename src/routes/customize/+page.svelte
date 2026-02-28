@@ -91,7 +91,7 @@
     <div class="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto">
       <!-- Choose or Enter Categories -->
       <div class="shrink-0">
-        <Label class="text-[14px] text-[#0a0a0a] font-normal mb-2 block">
+        <Label class="text-[14px] text-foreground font-normal mb-2 block">
           Choose or Enter Categories:
         </Label>
         <div class="category-selector">
@@ -134,7 +134,7 @@
 
       <!-- Number of Tabs -->
       <div class="shrink-0">
-        <Label class="text-[14px] text-[#0a0a0a] font-normal mb-2 block">
+        <Label class="text-[14px] text-foreground font-normal mb-2 block">
           Number of Tabs per Group
         </Label>
         <div class="slider-container">
@@ -152,7 +152,7 @@
 
       <!-- Additional Rules -->
       <div class="shrink-0">
-        <Label class="text-[14px] text-[#0a0a0a] font-normal mb-2 block">
+        <Label class="text-[14px] text-foreground font-normal mb-2 block">
           Additional Rules (Optional)
         </Label>
         <textarea
@@ -164,19 +164,19 @@
 
       <!-- Grouping Similarity -->
       <div class="shrink-0">
-        <Label class="text-[14px] text-[#0a0a0a] font-normal mb-2 block">
+        <Label class="text-[14px] text-foreground font-normal mb-2 block">
           Grouping similarity
         </Label>
         <div class="similarity-options">
           {#each similarityOptions as option (option.value)}
-            <button
-              class="similarity-option"
-              class:active={similarity === option.value}
+            <Button
+              variant={similarity === option.value ? "default" : "secondary"}
+              class="flex-1 flex-col h-auto py-3 gap-1"
               onclick={() => (similarity = option.value)}
             >
-              <span class="similarity-option-label">{option.label}</span>
-              <span class="similarity-option-ratio">{option.ratio}</span>
-            </button>
+              <span class="text-sm font-medium">{option.label}</span>
+              <span class="text-xs {similarity === option.value ? 'text-primary-foreground/70' : 'text-muted-foreground'}">{option.ratio}</span>
+            </Button>
           {/each}
         </div>
       </div>
@@ -201,9 +201,9 @@
     width: 100%;
     min-height: 52px;
     padding: 8px 12px;
-    border: 0.8px solid #e5e5e5;
+    border: 0.8px solid var(--color-border);
     border-radius: 8px;
-    background: white;
+    background: var(--color-card);
     cursor: pointer;
     text-align: left;
   }
@@ -221,8 +221,8 @@
     align-items: center;
     justify-content: center;
     padding: 6px 12px;
-    background: #4285f4;
-    color: white;
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
     font-size: 12px;
     border-radius: 10px;
     white-space: nowrap;
@@ -230,7 +230,7 @@
 
   .tag-ellipsis {
     font-size: 12px;
-    color: #111;
+    color: var(--color-foreground);
     padding: 0 2px;
   }
 
@@ -241,7 +241,7 @@
   }
 
   .category-input :global(.chevron) {
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
     flex-shrink: 0;
   }
 
@@ -251,8 +251,8 @@
     left: 0;
     right: 0;
     z-index: 10;
-    background: white;
-    border: 0.8px solid #e5e5e5;
+    background: var(--color-card);
+    border: 0.8px solid var(--color-border);
     border-top: none;
     border-radius: 0 0 8px 8px;
     padding: 12px;
@@ -273,7 +273,7 @@
     border: none;
     cursor: pointer;
     font-size: 12px;
-    color: #0a0a0a;
+    color: var(--color-foreground);
     text-align: left;
   }
 
@@ -281,13 +281,13 @@
     width: 24px;
     height: 24px;
     border-radius: 7px;
-    background: #d9d9d9;
+    background: var(--color-muted);
     flex-shrink: 0;
     transition: background 0.15s;
   }
 
   .checkbox.checked {
-    background: #4285f4;
+    background: var(--color-primary);
   }
 
   .slider-container {
@@ -295,9 +295,9 @@
     align-items: center;
     gap: 8px;
     padding: 16px 12px;
-    border: 1px solid #d9d9d9;
+    border: 1px solid var(--color-border);
     border-radius: 5px;
-    background: white;
+    background: var(--color-card);
     position: relative;
   }
 
@@ -311,34 +311,35 @@
 
   .slider-hint {
     font-size: 11px;
-    color: #9ca3af;
+    color: var(--color-muted-foreground);
   }
 
   .slider-label {
     font-size: 14px;
     font-weight: 500;
-    color: #060606;
+    color: var(--color-foreground);
   }
 
   .rules-textarea {
     width: 100%;
     height: 62px;
     padding: 8px 12px;
-    border: 0.8px solid rgba(0, 0, 0, 0.2);
+    border: 0.8px solid var(--color-border);
     border-radius: 8px;
     font-size: 12px;
-    color: #111;
+    color: var(--color-foreground);
+    background: var(--color-card);
     resize: none;
     outline: none;
     font-family: inherit;
   }
 
   .rules-textarea::placeholder {
-    color: #717182;
+    color: var(--color-muted-foreground);
   }
 
   .rules-textarea:focus {
-    border-color: #4285f4;
+    border-color: var(--color-ring);
   }
 
   .similarity-options {
@@ -346,37 +347,4 @@
     gap: 8px;
   }
 
-  .similarity-option {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 12px 8px;
-    border: 1px solid #d9d9d9;
-    border-radius: 8px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .similarity-option:hover {
-    border-color: #4285f4;
-  }
-
-  .similarity-option.active {
-    border-color: #4285f4;
-    background: #eff6ff;
-  }
-
-  .similarity-option-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #0a0a0a;
-  }
-
-  .similarity-option-ratio {
-    font-size: 12px;
-    color: #9ca3af;
-  }
 </style>
