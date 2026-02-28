@@ -8,15 +8,15 @@
     "default_title": "TabIt - AI Tab Manager"
   },
   "icons": {
-	"16": "TabIt16.png",
+    "16": "TabIt16.png",
     "32": "TabIt32.png",
     "48": "TabIt48.png",
     "128": "TabIt128.png"
   },
   "permissions": [
-	"tabs",
-	"tabGroups",
-	"storage"
+    "tabs",
+    "tabGroups",
+    "storage"
   ],
   "background": {
     "service_worker": "serviceWorker.js",
@@ -24,8 +24,17 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["similarityWorker.js"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "similarityWorker.js",
+        "embeddingWorker-v2.js",
+        "assets/*.wasm"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; script-src-elem 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  }
 }
