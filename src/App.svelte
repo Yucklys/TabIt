@@ -5,6 +5,9 @@
   import CustomizePage from './routes/customize/+page.svelte';
   import SettingsPage from './routes/settings/+page.svelte';
   import { getRoute, Route } from '$lib/router.svelte';
+  import { initI18n } from '$lib/i18n.svelte';
+
+  initI18n();
 </script>
 
 <ModeWatcher />

@@ -7,6 +7,7 @@
     ungroupGroup,
     activateTab,
   } from "$lib/groupStore.svelte";
+  import { t } from "$lib/i18n.svelte";
 
   interface Tab {
     id: number;
@@ -37,10 +38,10 @@
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 1) return "just now";
-    if (diffMins < 60) return `${diffMins}min${diffMins > 1 ? "s" : ""} ago`;
-    if (diffHours < 24) return `${diffHours}hr${diffHours > 1 ? "s" : ""} ago`;
-    return `${diffDays}day${diffDays > 1 ? "s" : ""} ago`;
+    if (diffMins < 1) return t('group.just_now');
+    if (diffMins < 60) return t('group.mins_ago', { n: diffMins });
+    if (diffHours < 24) return t('group.hrs_ago', { n: diffHours });
+    return t('group.days_ago', { n: diffDays });
   }
 
   // Sort tabs by last access time in descending order (most recent first)
@@ -49,7 +50,7 @@
   );
 
   const handleRename = async () => {
-    const newTitle = prompt('Rename group:', name);
+    const newTitle = prompt(t('group.rename_prompt'), name);
     if (newTitle && newTitle.trim()) {
       await renameGroup(groupId, newTitle.trim());
       await onMutated?.();
@@ -93,7 +94,7 @@
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
         class="menu-button"
-        aria-label="Group options"
+        aria-label={t('group.options_aria')}
         onclick={(e) => e.stopPropagation()}
       >
         <EllipsisVertical size={16} />
@@ -101,14 +102,14 @@
 
       <DropdownMenu.Content>
         <DropdownMenu.Item onclick={handleRename}>
-          Rename
+          {t('group.rename')}
         </DropdownMenu.Item>
         <DropdownMenu.Item onclick={handleChangeColor}>
-          Change color
+          {t('group.change_color')}
         </DropdownMenu.Item>
         <DropdownMenu.Separator />
         <DropdownMenu.Item variant="destructive" onclick={handleUngroup}>
-          Ungroup
+          {t('group.ungroup')}
         </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>

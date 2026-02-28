@@ -10,38 +10,45 @@
   import { navigate, navigateWithLoading, Route } from "$lib/router.svelte";
   import { getUserSettings, saveUserSettings } from "$api/storage";
   import { runGrouping } from "$lib/groupStore.svelte";
+  import { t } from "$lib/i18n.svelte";
 
-  // Category state
-  const allCategories = [
-    "Social Media",
-    "Entertainment",
-    "News",
-    "Research",
-    "Shopping",
-    "Documentation",
-    "Work",
-    "Email",
+  // Category state — keys map to i18n, values are the English identifiers stored in settings
+  const allCategories: { key: string; value: string }[] = [
+    { key: "customize.cat_social_media", value: "Social Media" },
+    { key: "customize.cat_entertainment", value: "Entertainment" },
+    { key: "customize.cat_news", value: "News" },
+    { key: "customize.cat_research", value: "Research" },
+    { key: "customize.cat_shopping", value: "Shopping" },
+    { key: "customize.cat_documentation", value: "Documentation" },
+    { key: "customize.cat_work", value: "Work" },
+    { key: "customize.cat_email", value: "Email" },
   ];
 
   let selectedCategories = $state<string[]>([]);
   let dropdownOpen = $state(false);
 
-  function toggleCategory(category: string) {
-    if (selectedCategories.includes(category)) {
-      selectedCategories = selectedCategories.filter((c) => c !== category);
+  function toggleCategory(value: string) {
+    if (selectedCategories.includes(value)) {
+      selectedCategories = selectedCategories.filter((c) => c !== value);
     } else {
-      selectedCategories = [...selectedCategories, category];
+      selectedCategories = [...selectedCategories, value];
     }
+  }
+
+  /** Get the i18n display label for a stored category value. */
+  function categoryLabel(value: string): string {
+    const cat = allCategories.find((c) => c.value === value);
+    return cat ? t(cat.key) : value;
   }
 
   // Slider state
   let tabCount = $state([1, 6]);
   let similarity = $state<'low' | 'medium' | 'high'>('high');
 
-  const similarityOptions = [
-    { label: 'Low', value: 'low' as const, ratio: 0.3 },
-    { label: 'Medium', value: 'medium' as const, ratio: 0.5 },
-    { label: 'High', value: 'high' as const, ratio: 0.7 },
+  const similarityOptions: { labelKey: string; value: 'low' | 'medium' | 'high'; ratio: number }[] = [
+    { labelKey: 'customize.low', value: 'low', ratio: 0.3 },
+    { labelKey: 'customize.medium', value: 'medium', ratio: 0.5 },
+    { labelKey: 'customize.high', value: 'high', ratio: 0.7 },
   ];
 
   const thresholdToSimilarity: Record<number, 'low' | 'medium' | 'high'> = {
@@ -92,7 +99,7 @@
       <!-- Choose or Enter Categories -->
       <div class="shrink-0">
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          Choose or Enter Categories:
+          {t('customize.categories_label')}
         </Label>
         <div class="category-selector">
           <button
@@ -101,7 +108,7 @@
           >
             <div class="tags-row">
               {#each selectedCategories.slice(0, 3) as category (category)}
-                <span class="tag">{category}</span>
+                <span class="tag">{categoryLabel(category)}</span>
               {/each}
               {#if selectedCategories.length > 3}
                 <span class="tag-ellipsis">...</span>
@@ -114,16 +121,16 @@
           {#if dropdownOpen}
             <div class="category-dropdown">
               <div class="category-grid">
-                {#each allCategories as category (category)}
+                {#each allCategories as category (category.value)}
                   <button
                     class="category-option"
-                    onclick={() => toggleCategory(category)}
+                    onclick={() => toggleCategory(category.value)}
                   >
                     <div
                       class="checkbox"
-                      class:checked={selectedCategories.includes(category)}
+                      class:checked={selectedCategories.includes(category.value)}
                     ></div>
-                    <span>{category}</span>
+                    <span>{t(category.key)}</span>
                   </button>
                 {/each}
               </div>
@@ -135,16 +142,16 @@
       <!-- Number of Tabs -->
       <div class="shrink-0">
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          Number of Tabs per Group
+          {t('customize.tabs_per_group')}
         </Label>
         <div class="slider-container">
           <div class="slider-endpoint">
-            <span class="slider-hint">Min</span>
+            <span class="slider-hint">{t('customize.min')}</span>
             <span class="slider-label">{tabCount[0]}</span>
           </div>
           <Slider bind:value={tabCount} min={1} max={20} step={1} />
           <div class="slider-endpoint">
-            <span class="slider-hint">Max</span>
+            <span class="slider-hint">{t('customize.max')}</span>
             <span class="slider-label">{tabCount[1]}</span>
           </div>
         </div>
@@ -153,11 +160,11 @@
       <!-- Additional Rules -->
       <div class="shrink-0">
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          Additional Rules (Optional)
+          {t('customize.additional_rules')}
         </Label>
         <textarea
           class="rules-textarea"
-          placeholder="e.g., Keep social media tabs separate, merge all news sites"
+          placeholder={t('customize.rules_placeholder')}
           bind:value={additionalRules}
         ></textarea>
       </div>
@@ -165,7 +172,7 @@
       <!-- Grouping Similarity -->
       <div class="shrink-0">
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          Grouping similarity
+          {t('customize.similarity')}
         </Label>
         <div class="similarity-options">
           {#each similarityOptions as option (option.value)}
@@ -174,7 +181,7 @@
               class="flex-1 flex-col h-auto py-3 gap-1"
               onclick={() => (similarity = option.value)}
             >
-              <span class="text-sm font-medium">{option.label}</span>
+              <span class="text-sm font-medium">{t(option.labelKey)}</span>
               <span class="text-xs {similarity === option.value ? 'text-primary-foreground/70' : 'text-muted-foreground'}">{option.ratio}</span>
             </Button>
           {/each}
@@ -184,8 +191,8 @@
 
     <!-- Action buttons -->
     <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
-      <Button variant="default" onclick={handleConfirm}>Confirm Grouping</Button>
-      <Button variant="outline" onclick={() => navigate(Route.Suggestion)}>Cancel</Button>
+      <Button variant="default" onclick={handleConfirm}>{t('customize.confirm')}</Button>
+      <Button variant="outline" onclick={() => navigate(Route.Suggestion)}>{t('customize.cancel')}</Button>
     </ButtonGroup.Root>
   </Card.Root>
 </main>

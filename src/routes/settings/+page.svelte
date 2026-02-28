@@ -7,23 +7,24 @@
   import { Button } from "$lib/components/ui/button/index";
   import { Label } from "$lib/components/ui/label/index";
   import { navigate, Route } from "$lib/router.svelte";
-  import { getLanguage, setLanguage, type Language } from "$api/storage";
+  import { getLanguage, type Language } from "$api/storage";
+  import { t, setUILanguage } from "$lib/i18n.svelte";
 
   type DisplayMode = "light" | "dark" | "system";
 
   let currentMode = $derived<DisplayMode>(userPrefersMode.current);
   let language = $state<Language>("en");
 
-  const displayModes: { label: string; value: DisplayMode }[] = [
-    { label: "Light Mode", value: "light" },
-    { label: "Dark Mode", value: "dark" },
-    { label: "System", value: "system" },
+  const displayModes: { labelKey: string; value: DisplayMode }[] = [
+    { labelKey: "settings.light_mode", value: "light" },
+    { labelKey: "settings.dark_mode", value: "dark" },
+    { labelKey: "settings.system", value: "system" },
   ];
 
   const languages: { label: string; value: Language }[] = [
     { label: "English", value: "en" },
-    { label: "Japanese", value: "ja" },
-    { label: "Spanish", value: "es" },
+    { label: "日本語", value: "ja" },
+    { label: "Español", value: "es" },
   ];
 
   onMount(async () => {
@@ -40,7 +41,7 @@
 
   async function selectLanguage(lang: Language) {
     language = lang;
-    await setLanguage(lang);
+    await setUILanguage(lang);
   }
 </script>
 
@@ -49,14 +50,14 @@
     <!-- Back button -->
     <button class="back-button" onclick={() => navigate(Route.Suggestion)}>
       <ChevronLeft size={20} />
-      <span>Back</span>
+      <span>{t('settings.back')}</span>
     </button>
 
     <div class="flex-1 min-h-0 flex flex-col gap-6 overflow-y-auto mt-2">
       <!-- Display Mode -->
       <div>
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          Display Mode
+          {t('settings.display_mode')}
         </Label>
         <div class="mode-previews">
           {#each displayModes as mode (mode.value)}
@@ -98,7 +99,7 @@
                 size="sm"
                 onclick={() => selectDisplayMode(mode.value)}
               >
-                {mode.label}
+                {t(mode.labelKey)}
               </Button>
             </div>
           {/each}
@@ -108,7 +109,7 @@
       <!-- Language -->
       <div>
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          Language
+          {t('settings.language')}
         </Label>
         <ButtonGroup.Root>
           {#each languages as lang (lang.value)}

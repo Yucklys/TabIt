@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Settings } from "@lucide/svelte";
   import { navigate, Route } from "$lib/router.svelte";
+  import { t } from "$lib/i18n.svelte";
 
   // Default to aggressive mode
   export const defaultMode = "aggressive";
@@ -26,7 +27,7 @@
     <h1>TabIt</h1>
   </div>
 
-  <button class="settings-icon" aria-label="Settings" onclick={() => navigate(Route.Settings)}>
+  <button class="settings-icon" aria-label={t('header.settings_aria')} onclick={() => navigate(Route.Settings)}>
     <Settings size={20} />
   </button>
 </div>
