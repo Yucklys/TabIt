@@ -1,4 +1,4 @@
-import { getAllTabGroupsWithCounts, createTabGroupFromIds } from '$api/tabGroups';
+import { getAllTabGroupsWithCounts, createTabGroupFromIds, ungroupAllGroups } from '$api/tabGroups';
 import { handleRenameGroup } from '$api/renameTabGroup';
 import { handleChangeGroupColor } from '$api/recolorTabGroup';
 import { handleUngroup } from '$api/ungroupTabs';
@@ -93,7 +93,7 @@ export async function runGrouping(): Promise<void> {
     ]);
 
     if (session.categorizationStatus === 'error') {
-      throw new Error(session.categorizationError || 'Grouping failed');
+      throw new Error(typeof session.categorizationError === 'string' ? session.categorizationError : 'Grouping failed');
     }
 
     const categorized = session.categorizedResult as
@@ -101,6 +101,9 @@ export async function runGrouping(): Promise<void> {
       | undefined;
 
     if (categorized && Object.keys(categorized).length > 0) {
+      // Clear all existing groups first to ensure a fresh start
+      await ungroupAllGroups();
+
       // Create Chrome tab groups from the categorized result
       for (const [categoryName, tabIds] of Object.entries(categorized)) {
         await createTabGroupFromIds(tabIds as [number, ...number[]], categoryName);

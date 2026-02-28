@@ -8,10 +8,10 @@ import { getUngroupedTabs } from '$api/tabs';
 export async function oneTimeGrouping(): Promise<void> {
   try {
     const tabs = await getUngroupedTabs();
-    
+
     // Check if there are any tabs to process
     if (!tabs || tabs.length === 0) {
-      await chrome.storage.session.set({ 
+      await chrome.storage.session.set({
         categorizedResult: {},
         categorizationStatus: 'no-tabs',
         message: 'No ungrouped tabs found to categorize'
@@ -23,7 +23,7 @@ export async function oneTimeGrouping(): Promise<void> {
     const categorizedResult = await categorizeAndGroup(tabs);
 
     // Save result to session storage for UI to pick up
-    await chrome.storage.session.set({ 
+    await chrome.storage.session.set({
       categorizedResult: categorizedResult,
       categorizationStatus: 'completed'
     });
@@ -32,7 +32,7 @@ export async function oneTimeGrouping(): Promise<void> {
   } catch (err) {
     if (err instanceof Error) {
       console.error('Error in one-time grouping:', err);
-      await chrome.storage.session.set({ 
+      await chrome.storage.session.set({
         categorizationStatus: 'error',
         categorizationError: err.message
       });
