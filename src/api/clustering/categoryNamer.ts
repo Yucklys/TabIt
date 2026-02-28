@@ -61,7 +61,7 @@ Return:
 - confidence: How well the tabs match (0.0-1.0)`
       }
     ],
-    expectedOutputs: [{ "type": "text", "languages": ["en"]}]
+    expectedOutputs: [{ "type": "text", "languages": ["en"] }]
   });
 }
 
@@ -102,9 +102,9 @@ What is a good category name that captures the common theme or purpose?`;
 async function matchToCustomCategory(
   cluster: Cluster,
   customGroups: string[],
-  threshold: number = 0.6
+  threshold: number = 0.5
 ): Promise<{ name: string; confidence: number } | null> {
-  if (customGroups.length === 0) {
+  if (!customGroups || !Array.isArray(customGroups) || customGroups.length === 0) {
     return null;
   }
 
@@ -139,7 +139,7 @@ Which category best matches these tabs, and how confident are you (0.0-1.0)?`;
       return null;
     }
   } catch (error) {
-    console.error('Error matching to custom category:', error);
+    console.error('Error matching custom category:', error);
     return null;
   }
 }
@@ -277,9 +277,17 @@ export async function nameClusters(
   // Step 3: Assign to groups, trying remaining custom categories if size exceeded
   const result = new Map<Cluster, string>();
   const groupSizes = new Map<string, number>();
-  const availableCustomGroups = [...customGroups]; // Copy to track available categories
 
-  for (const match of clusterMatches) {
+  // Safely copy customGroups in case it's not an iterable array
+  const availableCustomGroups: string[] = [];
+  if (Array.isArray(customGroups)) {
+    for (let i = 0; i < customGroups.length; i++) {
+      availableCustomGroups.push(customGroups[i]);
+    }
+  }
+
+  for (let i = 0; i < clusterMatches.length; i++) {
+    const match = clusterMatches[i];
     const tabCount = getClusterTabCount(match.cluster);
     let finalName = match.name;
 
@@ -297,7 +305,11 @@ export async function nameClusters(
       } else {
         // No good match in remaining categories, generate alternative name
         console.log('No match in remaining custom categories, generating alternative name...');
-        const usedNames = Array.from(groupSizes.keys());
+
+        // Safely extract Map keys without using iterators
+        const usedNames: string[] = [];
+        groupSizes.forEach((value, key) => usedNames.push(key));
+
         finalName = await generateAlternativeName(match.cluster, usedNames);
         console.log(`Generated alternative name: "${finalName}"`);
       }

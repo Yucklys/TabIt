@@ -1,7 +1,10 @@
 import type { TabProps } from '@/type/tabProps';
 import { groupTabsByDomain, getTabIds } from './domainGrouper';
-import { buildSimilarityMatrix } from './similarityScorer';
+import { buildSimilarityMatrix } from './vectorSimilarityScorer';
+// import { buildSimilarityMatrix } from './similarityScorer';
 import { hierarchicalClustering } from './hierarchicalClustering';
+import type { Cluster } from './hierarchicalClustering';
+import type { DomainGroup } from './domainGrouper';
 import { filterClustersBySize } from './clusterFilter';
 import { nameClusters } from './categoryNamer';
 import { getCustomGroups } from '../storage';
@@ -49,7 +52,15 @@ export async function clusterAndGroup(
   console.log(`\n[Phase 6] Converting to output format...`);
   const result: { [category: string]: [number, ...number[]] } = {};
 
-  for (const [cluster, name] of clusterNames.entries()) {
+  const entries: [Cluster, string][] = [];
+  clusterNames.forEach((name, cluster) => {
+    entries.push([cluster, name]);
+  });
+
+  for (let i = 0; i < entries.length; i++) {
+    const cluster = entries[i][0];
+    const name = entries[i][1];
+
     const allTabIds = cluster.domainGroups.flatMap(group => getTabIds(group));
 
     if (allTabIds.length > 0) {

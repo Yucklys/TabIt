@@ -1,6 +1,7 @@
 import type { DomainGroup } from './domainGrouper';
-import type { SimilarityMatrix } from './similarityScorer';
-import { getSimilarity } from './similarityScorer';
+import type { SimilarityMatrix } from './vectorSimilarityScorer';
+import { getSimilarity } from './vectorSimilarityScorer';
+// import { getSimilarity } from './similarityScorer';
 
 /**
  * Cluster - a group of domain groups that have been merged together
