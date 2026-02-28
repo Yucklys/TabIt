@@ -18,19 +18,21 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
 }
 
 export async function getUserSettings(): Promise<UserSettings> {
-  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'selectedMode', 'tabRange', 'similarityThreshold']);
+  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'selectedMode', 'tabRange', 'similarityThreshold', 'autoGroupingEnabled', 'groupCategories']);
   return {
-    customPrompt: result.customPrompt || '',
-    customGroups: result.customGroups || [],
-    selectedMode: result.selectedMode || 'smart',
-    tabRange: result.tabRange || [1, 6],
-    similarityThreshold: result.similarityThreshold ?? 0.7
+    customPrompt: typeof result.customPrompt === 'string' ? result.customPrompt : '',
+    customGroups: Array.isArray(result.customGroups) ? result.customGroups : [],
+    selectedMode: (result.selectedMode === 'smart' || result.selectedMode === 'oneTime' || result.selectedMode === 'aggressive') ? result.selectedMode : 'smart',
+    tabRange: (Array.isArray(result.tabRange) && result.tabRange.length === 2) ? result.tabRange as [number, number] : [1, 6],
+    similarityThreshold: typeof result.similarityThreshold === 'number' ? result.similarityThreshold : 0.7,
+    autoGroupingEnabled: typeof result.autoGroupingEnabled === 'boolean' ? result.autoGroupingEnabled : false,
+    groupCategories: (result.groupCategories && typeof result.groupCategories === 'object' && !Array.isArray(result.groupCategories)) ? result.groupCategories as { [category: string]: number[] } : undefined
   };
 }
 
 export async function getTabRange(): Promise<[number, number]> {
   const result = await chrome.storage.local.get('tabRange');
-  return result.tabRange || [1, 6];
+  return (Array.isArray(result.tabRange) && result.tabRange.length === 2) ? result.tabRange as [number, number] : [1, 6];
 }
 
 export async function setTabRange(range: [number, number]): Promise<void> {
@@ -39,7 +41,7 @@ export async function setTabRange(range: [number, number]): Promise<void> {
 
 export async function getCustomPrompt(): Promise<string> {
   const result = await chrome.storage.local.get('customPrompt');
-  return result.customPrompt || '';
+  return typeof result.customPrompt === 'string' ? result.customPrompt : '';
 }
 
 export async function setCustomPrompt(prompt: string): Promise<void> {
@@ -48,7 +50,7 @@ export async function setCustomPrompt(prompt: string): Promise<void> {
 
 export async function getCustomGroups(): Promise<string[]> {
   const result = await chrome.storage.local.get('customGroups');
-  return result.customGroups || [];
+  return Array.isArray(result.customGroups) ? result.customGroups : [];
 }
 
 export async function setCustomGroups(groups: string[]): Promise<void> {
@@ -57,7 +59,7 @@ export async function setCustomGroups(groups: string[]): Promise<void> {
 
 export async function getSelectedMode(): Promise<GroupingMode> {
   const result = await chrome.storage.local.get('selectedMode');
-  return result.selectedMode || 'smart';
+  return (result.selectedMode === 'smart' || result.selectedMode === 'oneTime' || result.selectedMode === 'aggressive') ? result.selectedMode : 'smart';
 }
 
 export async function setSelectedMode(mode: GroupingMode): Promise<void> {
@@ -66,7 +68,7 @@ export async function setSelectedMode(mode: GroupingMode): Promise<void> {
 
 export async function getSimilarityThreshold(): Promise<number> {
   const result = await chrome.storage.local.get('similarityThreshold');
-  return result.similarityThreshold ?? 0.7;
+  return typeof result.similarityThreshold === 'number' ? result.similarityThreshold : 0.7;
 }
 
 export async function setSimilarityThreshold(threshold: number): Promise<void> {
@@ -84,7 +86,10 @@ export async function setAutoGroupingEnabled(enabled: boolean): Promise<void> {
 
 export async function getGroupCategories(): Promise<{ [category: string]: number[] } | null> {
   const result = await chrome.storage.local.get('groupCategories');
-  return result.groupCategories || null;
+  if (result.groupCategories && typeof result.groupCategories === 'object' && !Array.isArray(result.groupCategories)) {
+    return result.groupCategories as { [category: string]: number[] };
+  }
+  return null;
 }
 
 export async function setGroupCategories(categories: { [category: string]: number[] }): Promise<void> {
