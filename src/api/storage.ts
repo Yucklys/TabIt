@@ -3,6 +3,8 @@
  */
 import { type GroupingMode } from '../type/groupingMode';
 
+export type Language = 'en' | 'ja' | 'es';
+
 export interface UserSettings {
   customPrompt?: string;
   customGroups?: string[];
@@ -11,6 +13,7 @@ export interface UserSettings {
   similarityThreshold?: number;
   autoGroupingEnabled?: boolean;
   groupCategories?: { [category: string]: number[] };
+  language?: Language;
 }
 
 export async function saveUserSettings(settings: Partial<UserSettings>): Promise<void> {
@@ -89,4 +92,13 @@ export async function getGroupCategories(): Promise<{ [category: string]: number
 
 export async function setGroupCategories(categories: { [category: string]: number[] }): Promise<void> {
   await chrome.storage.local.set({ groupCategories: categories });
+}
+
+export async function getLanguage(): Promise<Language> {
+  const result = await chrome.storage.local.get('language');
+  return result.language || 'en';
+}
+
+export async function setLanguage(language: Language): Promise<void> {
+  await chrome.storage.local.set({ language });
 }

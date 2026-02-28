@@ -1,6 +1,7 @@
 export enum Route {
   Suggestion = 'suggestion',
   Customize = 'customize',
+  Settings = 'settings',
 }
 
 let currentRoute = $state<Route>(Route.Suggestion);
