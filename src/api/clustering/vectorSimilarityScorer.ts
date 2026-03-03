@@ -1,7 +1,32 @@
 import type { DomainGroup } from './domainGrouper';
 import { getDomainGroupSummary } from './domainGrouper';
+import { pipeline, env } from '@huggingface/transformers';
 
 export type SimilarityMatrix = Map<string, Map<string, number>>;
+
+// Inline fallback for environments without Worker (e.g. MV3 service worker)
+let inlinePipeline: any = null;
+
+async function initInlinePipeline(): Promise<any> {
+    if (inlinePipeline) return inlinePipeline;
+    env.allowLocalModels = false;
+    if (env.backends?.onnx?.wasm) {
+        env.backends.onnx.wasm.numThreads = 1;
+        const extensionRoot = new URL('/', self.location.href).href;
+        env.backends.onnx.wasm.wasmPaths = extensionRoot + 'assets/';
+    }
+    inlinePipeline = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+        device: 'wasm',
+        dtype: 'fp32',
+    });
+    return inlinePipeline;
+}
+
+async function getEmbeddingInline(text: string): Promise<number[]> {
+    const extractor = await initInlinePipeline();
+    const output = await extractor(text, { pooling: 'mean', normalize: true });
+    return Array.from(output.data as Float32Array);
+}
 
 /**
  * Initialize Web Worker pool for embedding extraction
@@ -80,38 +105,53 @@ export async function buildSimilarityMatrix(
     }
 
     // 2. Compute embeddings for each unique Domain Group
-    // We strictly use 1 worker because instantiating multiple WASM models destroys memory and CPU
-    const workerPoolSize = 1;
-    console.log(`Creating pool of ${workerPoolSize} Web Workers for embedding extraction...`);
-    const workers = await createWorkerPool(workerPoolSize);
-
+    const canUseWorkers = typeof Worker !== 'undefined';
     const embeddingsMap: Map<string, number[]> = new Map();
     let completedExtractions = 0;
 
-    console.log(`Extracting vectors for ${domainGroups.length} domains...`);
+    console.log(`Extracting vectors for ${domainGroups.length} domains (${canUseWorkers ? 'Worker' : 'inline'} mode)...`);
 
-    // Extract embeddings in parallel
-    await Promise.all(
-        domainGroups.map(async (group, index) => {
+    if (canUseWorkers) {
+        // Worker pool path for popup/foreground contexts
+        const workerPoolSize = 1;
+        console.log(`Creating pool of ${workerPoolSize} Web Workers for embedding extraction...`);
+        const workers = await createWorkerPool(workerPoolSize);
+
+        await Promise.all(
+            domainGroups.map(async (group, index) => {
+                const summary = getDomainGroupSummary(group);
+                const worker = workers[index % workerPoolSize];
+
+                try {
+                    const vector = await getEmbeddingWithWorker(worker, index, summary);
+                    embeddingsMap.set(group.domain, vector);
+                    completedExtractions++;
+                    console.log(`[${completedExtractions}/${domainGroups.length}] Extracted vector for ${group.domain}`);
+                } catch (e) {
+                    console.error(`Failed to extract vector for ${group.domain}:`, e);
+                    embeddingsMap.set(group.domain, []);
+                }
+            })
+        );
+
+        workers.forEach(w => w.terminate());
+        console.log('All embeddings extracted, workers terminated.');
+    } else {
+        // Inline fallback for service worker context (no Worker constructor)
+        for (const group of domainGroups) {
             const summary = getDomainGroupSummary(group);
-            const worker = workers[index % workerPoolSize];
-
             try {
-                const vector = await getEmbeddingWithWorker(worker, index, summary);
+                const vector = await getEmbeddingInline(summary);
                 embeddingsMap.set(group.domain, vector);
                 completedExtractions++;
                 console.log(`[${completedExtractions}/${domainGroups.length}] Extracted vector for ${group.domain}`);
             } catch (e) {
                 console.error(`Failed to extract vector for ${group.domain}:`, e);
-                // Fallback to empty vector if extraction fails
                 embeddingsMap.set(group.domain, []);
             }
-        })
-    );
-
-    // Terminate workers since extraction is complete
-    workers.forEach(w => w.terminate());
-    console.log('All embeddings extracted, workers terminated.');
+        }
+        console.log('All embeddings extracted (inline mode).');
+    }
 
     // 3. Compute Pairwise Cosine Similarity Locally (O(N^2) but it's just raw math)
     let mathComparisons = 0;

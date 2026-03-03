@@ -9,8 +9,10 @@
   "suggestion.tab_groups": "Tab Groups",
   "suggestion.groups_active": "{count} {count, plural, one {group} other {groups}} active",
   "suggestion.no_groups": "No tab groups yet.",
-  "suggestion.no_groups_hint": "Click \"Smart Regroup\" to organize your tabs.",
+  "suggestion.no_groups_hint": "Enable Auto Grouping or use Customize to organize your tabs.",
   "suggestion.smart_regroup": "Smart Regroup",
+  "suggestion.auto_grouping": "Auto Grouping",
+  "suggestion.auto_grouping_desc": "Automatically organize new tabs using AI",
   "suggestion.customize": "Customize",
   "suggestion.loading": "Work in progress...",
 

@@ -4,16 +4,52 @@
   import Header from "$lib/components/Header.svelte";
   import SuggestionSkeleton from "$lib/components/SuggestionSkeleton.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
-  import * as ButtonGroup from "$lib/components/ui/button-group/index";
   import * as Card from "$lib/components/ui/card/index";
+  import { Switch } from "$lib/components/ui/switch/index";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
-  import { navigate, getIsLoading, navigateWithLoading, Route } from "$lib/router.svelte";
+  import { navigate, getIsLoading, Route } from "$lib/router.svelte";
   import { getGroups, loadGroups, runGrouping } from "$lib/groupStore.svelte";
+  import { getAutoGroupingEnabled, setAutoGroupingEnabled } from "$api/storage";
   import { t } from "$lib/i18n.svelte";
 
-  onMount(() => {
-    loadGroups();
+  let autoGrouping = $state(false);
+  let toggling = $state(false);
+  let regrouping = $state(false);
+
+  onMount(async () => {
+    autoGrouping = await getAutoGroupingEnabled();
+    await loadGroups();
   });
+
+  async function handleToggle(checked: boolean) {
+    toggling = true;
+    try {
+      if (checked) {
+        await setAutoGroupingEnabled(true);
+        autoGrouping = true;
+      } else {
+        await setAutoGroupingEnabled(false);
+        autoGrouping = false;
+      }
+    } catch (err) {
+      console.error('Error toggling auto grouping:', err);
+      // Revert on failure
+      autoGrouping = !checked;
+    } finally {
+      toggling = false;
+    }
+  }
+
+  async function handleRegroup() {
+    regrouping = true;
+    try {
+      await runGrouping();
+    } catch (err) {
+      console.error('Error running smart regroup:', err);
+    } finally {
+      regrouping = false;
+    }
+  }
 </script>
 
 <main>
@@ -21,7 +57,7 @@
     <!-- Header logo and title -->
     <Header/>
 
-    {#if getIsLoading()}
+    {#if getIsLoading() || toggling || regrouping}
       <SuggestionSkeleton />
     {:else}
       <!-- Tab Groups Header -->
@@ -57,16 +93,30 @@
       </ScrollArea>
     {/if}
 
-    <!-- Action buttons / loading status -->
-    {#if getIsLoading()}
+    <!-- Action area -->
+    {#if getIsLoading() || toggling || regrouping}
       <div class="w-full shrink-0 mt-4 flex items-center justify-center py-4">
         <p class="text-[14px] text-muted-foreground font-medium">{t('suggestion.loading')}</p>
       </div>
     {:else}
-      <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
-        <Button variant="default" onclick={() => navigateWithLoading(Route.Suggestion, runGrouping)}>{t('suggestion.smart_regroup')}</Button>
-        <Button variant="outline" onclick={() => navigate(Route.Customize)}>{t('suggestion.customize')}</Button>
-      </ButtonGroup.Root>
+      <div class="w-full shrink-0 mt-4 flex flex-col gap-3">
+        <!-- Action buttons row -->
+        <div class="flex gap-2">
+          <Button class="flex-1" onclick={handleRegroup}>{t('suggestion.smart_regroup')}</Button>
+          <Button variant="outline" class="flex-1" onclick={() => navigate(Route.Customize)}>{t('suggestion.customize')}</Button>
+        </div>
+        <!-- Auto Grouping toggle row -->
+        <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-0.5">
+            <span class="text-[14px] font-medium text-foreground">{t('suggestion.auto_grouping')}</span>
+            <span class="text-[11px] text-muted-foreground">{t('suggestion.auto_grouping_desc')}</span>
+          </div>
+          <Switch
+            checked={autoGrouping}
+            onCheckedChange={handleToggle}
+          />
+        </div>
+      </div>
     {/if}
   </Card.Root>
 </main>

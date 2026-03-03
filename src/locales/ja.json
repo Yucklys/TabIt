@@ -9,8 +9,10 @@
   "suggestion.tab_groups": "タブグループ",
   "suggestion.groups_active": "{count}個のグループが有効",
   "suggestion.no_groups": "タブグループはまだありません。",
-  "suggestion.no_groups_hint": "「スマート再編成」をクリックしてタブを整理しましょう。",
+  "suggestion.no_groups_hint": "自動グループ化を有効にするか、カスタマイズでタブを整理しましょう。",
   "suggestion.smart_regroup": "スマート再編成",
+  "suggestion.auto_grouping": "自動グループ化",
+  "suggestion.auto_grouping_desc": "AIを使って新しいタブを自動的に整理",
   "suggestion.customize": "カスタマイズ",
   "suggestion.loading": "処理中...",
 

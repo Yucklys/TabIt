@@ -9,8 +9,10 @@
   "suggestion.tab_groups": "Grupos de pestañas",
   "suggestion.groups_active": "{count} {count, plural, one {grupo} other {grupos}} activo{count, plural, one {} other {s}}",
   "suggestion.no_groups": "No hay grupos de pestañas aún.",
-  "suggestion.no_groups_hint": "Haz clic en \"Reagrupar\" para organizar tus pestañas.",
+  "suggestion.no_groups_hint": "Activa la agrupación automática o usa Personalizar para organizar tus pestañas.",
   "suggestion.smart_regroup": "Reagrupar",
+  "suggestion.auto_grouping": "Agrupación automática",
+  "suggestion.auto_grouping_desc": "Organizar nuevas pestañas automáticamente con IA",
   "suggestion.customize": "Personalizar",
   "suggestion.loading": "En progreso...",
 
