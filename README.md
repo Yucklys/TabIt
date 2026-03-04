@@ -1,4 +1,4 @@
-# TabSense
+# Tabit
 
 TabSense is an AI driven Tab Manager for Chrome.
 
