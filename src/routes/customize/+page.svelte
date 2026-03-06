@@ -82,7 +82,7 @@
 
   async function handleConfirm() {
     await saveUserSettings({
-      customGroups: selectedCategories,
+      customGroups: $state.snapshot(selectedCategories),
       tabRange: [tabCount[0], tabCount[1]] as [number, number],
       similarityThreshold: getSimilarityThreshold(),
       customPrompt: additionalRules,

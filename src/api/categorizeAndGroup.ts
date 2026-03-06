@@ -17,13 +17,7 @@ export async function categorizeAndGroup(
   const tabInfoList = getTabProps(tabs);
   console.log('Total tab number:', tabInfoList.length)
 
-  // If existing group names are provided, merge them with custom groups
-  // so the clustering pipeline can reuse existing category names
-  if (existingGroupNames && existingGroupNames.length > 0) {
-    const currentCustomGroups = await getCustomGroups();
-    const merged = [...new Set([...existingGroupNames, ...currentCustomGroups])];
-    await setCustomGroups(merged);
-  }
+
 
   // Get clustering settings
   const tabRange = await getTabRange();
