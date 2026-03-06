@@ -43,22 +43,26 @@
 
   // Slider state
   let tabCount = $state([1, 6]);
-  let similarity = $state<'low' | 'medium' | 'high'>('high');
+  let similarity = $state<"low" | "medium" | "high">("high");
 
-  const similarityOptions: { labelKey: string; value: 'low' | 'medium' | 'high'; ratio: number }[] = [
-    { labelKey: 'customize.low', value: 'low', ratio: 0.3 },
-    { labelKey: 'customize.medium', value: 'medium', ratio: 0.5 },
-    { labelKey: 'customize.high', value: 'high', ratio: 0.7 },
+  const similarityOptions: {
+    labelKey: string;
+    value: "low" | "medium" | "high";
+    ratio: number;
+  }[] = [
+    { labelKey: "customize.low", value: "low", ratio: 0.3 },
+    { labelKey: "customize.medium", value: "medium", ratio: 0.5 },
+    { labelKey: "customize.high", value: "high", ratio: 0.7 },
   ];
 
-  const thresholdToSimilarity: Record<number, 'low' | 'medium' | 'high'> = {
-    0.3: 'low',
-    0.5: 'medium',
-    0.7: 'high',
+  const thresholdToSimilarity: Record<number, "low" | "medium" | "high"> = {
+    0.3: "low",
+    0.5: "medium",
+    0.7: "high",
   };
 
   function getSimilarityThreshold(): number {
-    return similarityOptions.find(o => o.value === similarity)?.ratio ?? 0.7;
+    return similarityOptions.find((o) => o.value === similarity)?.ratio ?? 0.7;
   }
 
   // Additional rules
@@ -73,7 +77,8 @@
       tabCount = [...settings.tabRange];
     }
     if (settings.similarityThreshold != null) {
-      similarity = thresholdToSimilarity[settings.similarityThreshold] ?? 'high';
+      similarity =
+        thresholdToSimilarity[settings.similarityThreshold] ?? "high";
     }
     if (settings.customPrompt) {
       additionalRules = settings.customPrompt;
@@ -99,7 +104,7 @@
       <!-- Choose or Enter Categories -->
       <div class="shrink-0">
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          {t('customize.categories_label')}
+          {t("customize.categories_label")}
         </Label>
         <div class="category-selector">
           <button
@@ -128,7 +133,9 @@
                   >
                     <div
                       class="checkbox"
-                      class:checked={selectedCategories.includes(category.value)}
+                      class:checked={selectedCategories.includes(
+                        category.value,
+                      )}
                     ></div>
                     <span>{t(category.key)}</span>
                   </button>
@@ -142,16 +149,16 @@
       <!-- Number of Tabs -->
       <div class="shrink-0">
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          {t('customize.tabs_per_group')}
+          {t("customize.tabs_per_group")}
         </Label>
         <div class="slider-container">
           <div class="slider-endpoint">
-            <span class="slider-hint">{t('customize.min')}</span>
+            <span class="slider-hint">{t("customize.min")}</span>
             <span class="slider-label">{tabCount[0]}</span>
           </div>
           <Slider bind:value={tabCount} min={1} max={20} step={1} />
           <div class="slider-endpoint">
-            <span class="slider-hint">{t('customize.max')}</span>
+            <span class="slider-hint">{t("customize.max")}</span>
             <span class="slider-label">{tabCount[1]}</span>
           </div>
         </div>
@@ -160,11 +167,11 @@
       <!-- Additional Rules -->
       <div class="shrink-0">
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          {t('customize.additional_rules')}
+          {t("customize.additional_rules")}
         </Label>
         <textarea
           class="rules-textarea"
-          placeholder={t('customize.rules_placeholder')}
+          placeholder={t("customize.rules_placeholder")}
           bind:value={additionalRules}
         ></textarea>
       </div>
@@ -172,7 +179,7 @@
       <!-- Grouping Similarity -->
       <div class="shrink-0">
         <Label class="text-[14px] text-foreground font-normal mb-2 block">
-          {t('customize.similarity')}
+          {t("customize.similarity")}
         </Label>
         <div class="similarity-options">
           {#each similarityOptions as option (option.value)}
@@ -182,7 +189,11 @@
               onclick={() => (similarity = option.value)}
             >
               <span class="text-sm font-medium">{t(option.labelKey)}</span>
-              <span class="text-xs {similarity === option.value ? 'text-primary-foreground/70' : 'text-muted-foreground'}">{option.ratio}</span>
+              <span
+                class="text-xs {similarity === option.value
+                  ? 'text-primary-foreground/70'
+                  : 'text-muted-foreground'}">{option.ratio}</span
+              >
             </Button>
           {/each}
         </div>
@@ -191,8 +202,12 @@
 
     <!-- Action buttons -->
     <ButtonGroup.Root orientation="vertical" class="w-full shrink-0 mt-4">
-      <Button variant="default" onclick={handleConfirm}>{t('customize.confirm')}</Button>
-      <Button variant="outline" onclick={() => navigate(Route.Suggestion)}>{t('customize.cancel')}</Button>
+      <Button variant="default" onclick={handleConfirm}
+        >{t("customize.confirm")}</Button
+      >
+      <Button variant="outline" onclick={() => navigate(Route.Suggestion)}
+        >{t("customize.cancel")}</Button
+      >
     </ButtonGroup.Root>
   </Card.Root>
 </main>
@@ -353,5 +368,4 @@
     display: flex;
     gap: 8px;
   }
-
 </style>
