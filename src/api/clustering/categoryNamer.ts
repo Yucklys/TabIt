@@ -13,6 +13,30 @@ const namingSchema = {
   "required": ["categoryName"]
 };
 
+/**
+ * Safely parse JSON from LLM output, stripping markdown blocks if present
+ */
+function safeParseJSON(text: string): any {
+  if (!text) return {};
+  try {
+    let cleaned = text.trim();
+    if (cleaned.startsWith('```')) {
+      const firstNewline = cleaned.indexOf('\n');
+      const lastBackticks = cleaned.lastIndexOf('```');
+      if (firstNewline !== -1 && lastBackticks > firstNewline) {
+        cleaned = cleaned.substring(firstNewline + 1, lastBackticks).trim();
+      }
+    }
+    return JSON.parse(cleaned);
+  } catch (error) {
+    try {
+      return JSON.parse(text);
+    } catch (e2) {
+      throw error;
+    }
+  }
+}
+
 const matchingSchema = {
   "type": "object",
   "properties": {
@@ -71,6 +95,144 @@ Return:
 }
 
 /**
+ * Initialize AI session for batch category matching
+ */
+async function initBatchMatchingSession(lang: Language) {
+  return await LanguageModel.create({
+    initialPrompts: [
+      {
+        role: "system",
+        content: `You are a category matching assistant. Assign each provided domain to the closest predefined category. 
+If a domain does not clearly and strongly match any predefined category, assign it to "None".
+Output must be a JSON object with a 'matches' array mapping the numeric 'id' to the best 'category'.`
+      }
+    ],
+    expectedInputs: [{ type: "text", languages: ["en", lang] }],
+    expectedOutputs: [{ type: "text", languages: [lang] }]
+  });
+}
+
+/**
+ * A basic heuristic keyword map for common predefined categories.
+ * This instantly maps well-known domains to user categories without needing AI parsing.
+ */
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  "Social Media": ["facebook", "twitter", "x.com", "instagram", "linkedin", "tiktok", "reddit", "weibo"],
+  "Entertainment": ["youtube", "netflix", "bilibili", "twitch", "spotify", "hulu", "disney"],
+  "News": ["news", "cnn", "bbc", "nytimes", "wsj", "bloomberg", "reuters"],
+  "Research": ["scholar", "arxiv", "research", "wiki", "ncbi", "ieee"],
+  "Shopping": ["amazon", "ebay", "walmart", "taobao", "jd", "target", "shopify"],
+  "Documentation": ["docs", "mdn", "w3schools", "api", "manual", "guide", "dev"],
+  "Work": ["github", "gitlab", "bitbucket", "jira", "confluence", "trello", "slack", "notion"],
+  "Email": ["mail", "gmail", "outlook", "yahoo", "inbox"]
+};
+
+/**
+ * Match an array of domains to user custom categories using a single prompt
+ */
+export async function matchDomainsToCustomCategories(
+  domainGroups: import('./domainGrouper').DomainGroup[],
+  customGroups: string[],
+  lang: Language = 'en'
+): Promise<Map<string, string>> {
+  if (!customGroups || customGroups.length === 0 || domainGroups.length === 0) {
+    return new Map();
+  }
+
+  const resultMap = new Map<string, string>();
+  const unmappedGroups: import('./domainGrouper').DomainGroup[] = [];
+
+  // Phase 1: Fast Heuristic Keyword Matching (Instant)
+  for (const group of domainGroups) {
+    let matched = false;
+    const domainStr = group.domain.toLowerCase();
+
+    // Check if the domain matches any known keywords for the SELECTED custom groups
+    for (const category of customGroups) {
+      const keywords = CATEGORY_KEYWORDS[category];
+      if (keywords) {
+        if (keywords.some(kw => domainStr.includes(kw))) {
+          resultMap.set(group.domain, category);
+          matched = true;
+          break;
+        }
+      }
+
+      // Also match if the exact category name appears in the domain (e.g. "shopping" inside "myshopping.com")
+      if (!matched && domainStr.includes(category.toLowerCase().replace(/\s+/g, ''))) {
+        resultMap.set(group.domain, category);
+        matched = true;
+        break;
+      }
+    }
+
+    if (!matched) {
+      unmappedGroups.push(group);
+    }
+  }
+
+  // If everything matched instantly, bypass the AI prompt entirely
+  if (unmappedGroups.length === 0) {
+    console.log("All domains pre-categorized heuristically:", Object.fromEntries(resultMap));
+    return resultMap;
+  }
+
+  // Phase 2: AI fallback for the remaining unmapped domains
+  const domainList = unmappedGroups.map((g, i) => `[ID: ${i}] Domain: ${g.domain} (Example Titles: ${g.tabs.slice(0, 2).map(t => t.title).join(', ')})`);
+
+  const promptText = `Match these domains to the closest predefined category. If a domain doesn't strongly fit any category, output "None".
+
+Domains to classify:
+${domainList.join('\n')}
+
+Predefined categories: ${customGroups.join(', ')}
+
+Return the best match for each domain ID. Use EXACTLY the predefined category name.`;
+
+  try {
+    const session = await initBatchMatchingSession(lang);
+    const response = await session.prompt(promptText, {
+      responseConstraint: {
+        "type": "object",
+        "properties": {
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "number", "description": "The exact numeric ID of the domain" },
+                "category": { "type": "string" }
+              },
+              "required": ["id", "category"]
+            }
+          }
+        },
+        "required": ["matches"]
+      }
+    });
+
+    const parsed = safeParseJSON(response);
+
+    if (parsed.matches && Array.isArray(parsed.matches)) {
+      for (const match of parsed.matches) {
+        if (typeof match.id === 'number' && match.id >= 0 && match.id < unmappedGroups.length) {
+          if (match.category && match.category !== "None" && customGroups.includes(match.category)) {
+            const matchedGroup = unmappedGroups[match.id];
+            resultMap.set(matchedGroup.domain, match.category);
+          }
+        }
+      }
+    }
+
+    console.log("Pre-categorization matches (Heuristic + AI):", Object.fromEntries(resultMap));
+    return resultMap;
+  } catch (error) {
+    console.error('Error in batch custom category matching:', error);
+    return resultMap; // Return at least the heuristic matches
+  }
+}
+
+/**
  * Generate a category name from cluster content using AI
  */
 async function generateCategoryName(cluster: Cluster, lang: Language): Promise<string> {
@@ -88,7 +250,7 @@ What is a good category name that captures the common theme or purpose?`;
       responseConstraint: namingSchema
     });
 
-    const parsed = JSON.parse(response);
+    const parsed = safeParseJSON(response);
     return parsed.categoryName || 'General';
   } catch (error) {
     console.error('Error generating category name:', error);
@@ -131,7 +293,7 @@ Which category best matches these tabs, and how confident are you (0.0-1.0)?`;
       responseConstraint: matchingSchema
     });
 
-    const parsed = JSON.parse(response);
+    const parsed = safeParseJSON(response);
     const match = {
       name: parsed.bestMatch,
       confidence: parsed.confidence
@@ -215,7 +377,7 @@ What is a good category name that captures the common theme or purpose?`;
       responseConstraint: namingSchema
     });
 
-    const parsed = JSON.parse(response);
+    const parsed = safeParseJSON(response);
     return parsed.categoryName || 'General';
   } catch (error) {
     console.error('Error generating alternative name:', error);
