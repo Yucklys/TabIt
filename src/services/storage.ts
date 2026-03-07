@@ -5,8 +5,6 @@
 export type Language = 'en' | 'ja' | 'es';
 
 export interface UserSettings {
-  customPrompt?: string;
-  customGroups?: string[];
   tabRange?: [number, number];
   similarityThreshold?: number;
   autoGroupingEnabled?: boolean;
@@ -19,12 +17,10 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
 }
 
 export async function getUserSettings(): Promise<UserSettings> {
-  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'tabRange', 'similarityThreshold', 'autoGroupingEnabled', 'groupCategories']);
+  const result = await chrome.storage.local.get(['tabRange', 'similarityThreshold', 'autoGroupingEnabled', 'groupCategories']);
   return {
-    customPrompt: typeof result.customPrompt === 'string' ? result.customPrompt : '',
-    customGroups: Array.isArray(result.customGroups) ? result.customGroups : [],
     tabRange: (Array.isArray(result.tabRange) && result.tabRange.length === 2) ? result.tabRange as [number, number] : [1, 6],
-    similarityThreshold: typeof result.similarityThreshold === 'number' ? result.similarityThreshold : 0.7,
+    similarityThreshold: typeof result.similarityThreshold === 'number' ? result.similarityThreshold : 0.5,
     autoGroupingEnabled: typeof result.autoGroupingEnabled === 'boolean' ? result.autoGroupingEnabled : false,
     groupCategories: (result.groupCategories && typeof result.groupCategories === 'object' && !Array.isArray(result.groupCategories)) ? result.groupCategories as { [category: string]: number[] } : undefined
   };
@@ -39,27 +35,9 @@ export async function setTabRange(range: [number, number]): Promise<void> {
   await chrome.storage.local.set({ tabRange: range });
 }
 
-export async function getCustomPrompt(): Promise<string> {
-  const result = await chrome.storage.local.get('customPrompt');
-  return typeof result.customPrompt === 'string' ? result.customPrompt : '';
-}
-
-export async function setCustomPrompt(prompt: string): Promise<void> {
-  await chrome.storage.local.set({ customPrompt: prompt });
-}
-
-export async function getCustomGroups(): Promise<string[]> {
-  const result = await chrome.storage.local.get('customGroups');
-  return Array.isArray(result.customGroups) ? result.customGroups : [];
-}
-
-export async function setCustomGroups(groups: string[]): Promise<void> {
-  await chrome.storage.local.set({ customGroups: groups });
-}
-
 export async function getSimilarityThreshold(): Promise<number> {
   const result = await chrome.storage.local.get('similarityThreshold');
-  return typeof result.similarityThreshold === 'number' ? result.similarityThreshold : 0.7;
+  return typeof result.similarityThreshold === 'number' ? result.similarityThreshold : 0.5;
 }
 
 export async function setSimilarityThreshold(threshold: number): Promise<void> {
