@@ -31,29 +31,14 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './index.html',
-        similarityWorker: './src/workers/similarityWorker.ts',
-        embeddingWorker: './src/workers/embeddingWorker.ts',
         serviceWorker: './src/background/serviceWorker.ts'
       },
       output: {
         entryFileNames: (chunkInfo) => {
-          if (chunkInfo.name === 'similarityWorker') {
-            return 'similarityWorker.js';
-          }
-          if (chunkInfo.name === 'embeddingWorker') {
-            return 'embeddingWorker-v2.js';
-          }
           if (chunkInfo.name === 'serviceWorker') {
             return 'serviceWorker.js';
           }
           return 'assets/[name]-[hash].js';
-        },
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name && assetInfo.name.endsWith('.wasm')) {
-            // Do not hash WASM files so Transformers.js can dynamically fetch them by exact name
-            return 'assets/[name].[ext]';
-          }
-          return 'assets/[name]-[hash].[ext]';
         }
       }
     }

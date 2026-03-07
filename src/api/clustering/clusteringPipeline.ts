@@ -1,10 +1,9 @@
 import type { TabProps } from '@/type/tabProps';
 import { groupTabsByDomain, getTabIds } from './domainGrouper';
-import { buildSimilarityMatrix } from './vectorSimilarityScorer';
-// import { buildSimilarityMatrix } from './similarityScorer';
+import { buildSimilarityScorer, buildDomainGroupMatrix } from './tfidfSimilarity';
 import { hierarchicalClustering } from './hierarchicalClustering';
 import type { Cluster } from './hierarchicalClustering';
-import type { DomainGroup } from './domainGrouper';
+
 import { filterClustersBySize } from './clusterFilter';
 import { nameClusters } from './categoryNamer';
 import { getCustomGroups } from '../storage';
@@ -64,9 +63,11 @@ export async function clusterAndGroup(
 
   // If there are unmapped domains, proceed with the rest of the pipeline
   if (unmappedDomainGroups.length > 0) {
-    // Phase 2: Build similarity matrix
-    console.log(`\n[Phase 2] Building similarity matrix for ${unmappedDomainGroups.length} unmapped domains...`);
-    const similarityMatrix = await buildSimilarityMatrix(unmappedDomainGroups);
+    // Phase 2: Build similarity matrix (TF-IDF + domain bonus)
+    console.log(`\n[Phase 2] Building similarity matrix (TF-IDF) for ${unmappedDomainGroups.length} unmapped domains...`);
+    const unmappedTabs = unmappedDomainGroups.flatMap(g => g.tabs);
+    const scorer = buildSimilarityScorer(unmappedTabs);
+    const similarityMatrix = buildDomainGroupMatrix(unmappedTabs, unmappedDomainGroups, scorer);
 
     // Phase 3: HAC clustering
     console.log(`\n[Phase 3] Running hierarchical clustering...`);

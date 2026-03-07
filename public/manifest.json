@@ -22,19 +22,7 @@
     "service_worker": "serviceWorker.js",
     "type": "module"
   },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "similarityWorker.js",
-        "embeddingWorker-v2.js",
-        "assets/*.wasm"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
-  ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; script-src-elem 'self' 'wasm-unsafe-eval'; object-src 'self';"
+    "extension_pages": "script-src 'self'; object-src 'self';"
   }
 }
