@@ -1,5 +1,5 @@
 import type { Cluster } from './hierarchicalClustering';
-import type { TabProps } from '@/type/tabProps';
+import type { TabProps } from '$type/tabProps';
 
 export type FilteredClusters = {
   validClusters: Cluster[];

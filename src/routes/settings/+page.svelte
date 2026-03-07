@@ -7,7 +7,7 @@
   import { Button } from "$lib/components/ui/button/index";
   import { Label } from "$lib/components/ui/label/index";
   import { navigate, Route } from "$lib/router.svelte";
-  import { getLanguage, type Language } from "$api/storage";
+  import { getLanguage, type Language } from "$services/storage";
   import { t, setUILanguage } from "$lib/i18n.svelte";
 
   type DisplayMode = "light" | "dark" | "system";

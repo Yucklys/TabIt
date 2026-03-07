@@ -1,5 +1,5 @@
-import { extractDomain, extractPath } from '@/utils/url';
-import type { TabProps } from '@/type/tabProps';
+import { extractDomain, extractPath } from '$utils/url';
+import type { TabProps } from '$type/tabProps';
 
 const defaultTabFilters = {
   pinned: false

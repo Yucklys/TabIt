@@ -2,9 +2,6 @@
   import { Settings } from "@lucide/svelte";
   import { navigate, Route } from "$lib/router.svelte";
   import { t } from "$lib/i18n.svelte";
-
-  // Default to aggressive mode
-  export const defaultMode = "aggressive";
 </script>
 
 <div class="flex items-center justify-between mb-6">

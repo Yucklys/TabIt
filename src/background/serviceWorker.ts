@@ -4,9 +4,9 @@
  * Uses the same AI clustering pipeline as the popup UI
  */
 
-import { categorizeAndGroup } from '$api/categorizeAndGroup';
-import { createTabGroupFromIds, getAllTabGroups } from '$api/tabGroups';
-import { getUngroupedTabs } from '$api/tabs';
+import { categorizeTabs } from '$core/categorizeAndGroup';
+import { createTabGroupFromIds, getAllTabGroups } from '$services/tabGroups';
+import { getUngroupedTabs } from '$services/tabs';
 
 // Helper to check if auto-grouping is enabled
 async function isAutoGroupingEnabled(): Promise<boolean> {
@@ -46,12 +46,9 @@ async function runAutoGrouping(): Promise<void> {
 
   console.log(`[Auto-Grouping] Processing ${validTabs.length} ungrouped tabs`);
 
-  // Get existing group names so AI can reuse them
   const existingGroups = await getAllTabGroups();
-  const existingGroupNames = existingGroups.map((g) => g.title || '').filter(Boolean);
 
-  // Run AI clustering pipeline
-  const categorized = await categorizeAndGroup(validTabs, existingGroupNames.length > 0 ? existingGroupNames : undefined);
+  const categorized = await categorizeTabs(validTabs);
 
   if (!categorized || Object.keys(categorized).length === 0) {
     console.log('[Auto-Grouping] No categories returned from AI pipeline');

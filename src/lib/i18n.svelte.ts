@@ -1,4 +1,4 @@
-import { getLanguage, setLanguage, type Language } from '$api/storage';
+import { getLanguage, setLanguage, type Language } from '$services/storage';
 import en from '../locales/en.json';
 import ja from '../locales/ja.json';
 import es from '../locales/es.json';

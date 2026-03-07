@@ -1,9 +1,12 @@
-import { getAllTabGroupsWithCounts, createTabGroupFromIds, ungroupAllGroups } from '$api/tabGroups';
-import { handleRenameGroup } from '$api/renameTabGroup';
-import { handleChangeGroupColor } from '$api/recolorTabGroup';
-import { handleUngroup } from '$api/ungroupTabs';
-import { getSelectedMode } from '$api/storage';
-import { MODES } from '$type/groupingMode';
+import { 
+  getAllTabGroupsWithCounts, 
+  createTabGroupFromIds, 
+  ungroupAllGroups,
+  renameGroup,
+  cycleGroupColor,
+  ungroupTabs 
+} from '$services/tabGroups';
+import { groupTabs } from '$core/categorizeAndGroup';
 
 export interface DisplayTab {
   id: number;
@@ -79,11 +82,8 @@ export async function loadGroups(): Promise<void> {
 export async function runGrouping(): Promise<void> {
   try {
     error = null;
-    const mode = await getSelectedMode();
-    const modeConfig = MODES[mode];
-
-    // Run the grouping function (categorizes tabs and saves to session storage)
-    await modeConfig.groupingFunction();
+    
+    await groupTabs();
 
     // Read categorized result from session storage
     const session = await chrome.storage.session.get([
@@ -120,21 +120,23 @@ export async function runGrouping(): Promise<void> {
   }
 }
 
-export async function renameGroup(groupId: number, newTitle: string): Promise<void> {
-  await handleRenameGroup(groupId, newTitle);
-  await loadGroups();
+export async function renameGroupAction(groupId: number, newTitle: string): Promise<void> {
+  const result = await renameGroup(groupId, newTitle);
+  if (result.success) {
+    await loadGroups();
+  }
 }
 
-export async function changeGroupColor(
+export async function changeGroupColorAction(
   groupId: number,
   currentColor: chrome.tabGroups.Color | undefined,
 ): Promise<void> {
-  await handleChangeGroupColor(groupId, currentColor);
+  await cycleGroupColor(groupId, currentColor);
   await loadGroups();
 }
 
-export async function ungroupGroup(groupId: number): Promise<void> {
-  await handleUngroup(groupId);
+export async function ungroupGroupAction(groupId: number): Promise<void> {
+  await ungroupTabs(groupId);
   await loadGroups();
 }
 

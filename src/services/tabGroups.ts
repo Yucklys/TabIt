@@ -1,8 +1,19 @@
 type TabGroup = chrome.tabGroups.TabGroup;
 
-/**
- * Create a tab group with given tab IDs, name, and optional color
- */
+export const AVAILABLE_COLORS = [
+  'grey',
+  'blue',
+  'red',
+  'yellow',
+  'green',
+  'pink',
+  'purple',
+  'cyan',
+  'orange'
+] as const;
+
+type ColorType = typeof AVAILABLE_COLORS[number];
+
 export async function createTabGroupFromIds(
   tabIds: [number, ...number[]],
   groupName: string,
@@ -126,5 +137,52 @@ export async function ungroupAllGroups(): Promise<void> {
     }
   } catch (error) {
     console.error('Error ungrouping all groups:', error);
+  }
+}
+
+export async function renameGroup(
+  groupId: number,
+  newTitle: string
+): Promise<{ success: boolean }> {
+  try {
+    if (!newTitle.trim()) return { success: false };
+    await chrome.tabGroups.update(groupId, { title: newTitle.trim() });
+    return { success: true };
+  } catch (error) {
+    console.error('Error renaming group:', error);
+    return { success: false };
+  }
+}
+
+export async function cycleGroupColor(
+  groupId: number,
+  currentColor?: chrome.tabGroups.Color
+): Promise<{ success: boolean; newColor?: chrome.tabGroups.Color }> {
+  const current = currentColor || AVAILABLE_COLORS[0];
+  const currentIndex = AVAILABLE_COLORS.indexOf(current as ColorType);
+  const nextIndex = (currentIndex + 1) % AVAILABLE_COLORS.length;
+  const nextColor = AVAILABLE_COLORS[nextIndex] as chrome.tabGroups.Color;
+
+  try {
+    await chrome.tabGroups.update(groupId, { color: nextColor });
+    return { success: true, newColor: nextColor };
+  } catch (error) {
+    console.error('Error cycling group color:', error);
+    return { success: false };
+  }
+}
+
+export async function ungroupTabs(groupId: number): Promise<{ success: boolean }> {
+  try {
+    const tabs = await chrome.tabs.query({ groupId });
+    for (const tab of tabs) {
+      if (tab.id !== undefined) {
+        await chrome.tabs.ungroup(tab.id);
+      }
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error ungrouping tabs:', error);
+    return { success: false };
   }
 }

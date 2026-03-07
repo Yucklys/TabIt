@@ -1,4 +1,4 @@
-import type { TabProps } from '@/type/tabProps';
+import type { TabProps } from '$type/tabProps';
 
 /**
  * Domain group - represents all tabs from the same domain

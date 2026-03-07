@@ -8,7 +8,7 @@
   import { Slider } from "$lib/components/ui/slider/index";
   import { ChevronDown } from "@lucide/svelte";
   import { navigate, navigateWithLoading, Route } from "$lib/router.svelte";
-  import { getUserSettings, saveUserSettings } from "$api/storage";
+  import { getUserSettings, saveUserSettings } from "$services/storage";
   import { runGrouping } from "$lib/groupStore.svelte";
   import { t } from "$lib/i18n.svelte";
 
@@ -156,7 +156,7 @@
             <span class="slider-hint">{t("customize.min")}</span>
             <span class="slider-label">{tabCount[0]}</span>
           </div>
-          <Slider bind:value={tabCount} min={1} max={20} step={1} />
+          <Slider type="multiple" bind:value={tabCount} min={1} max={20} step={1} />
           <div class="slider-endpoint">
             <span class="slider-hint">{t("customize.max")}</span>
             <span class="slider-label">{tabCount[1]}</span>

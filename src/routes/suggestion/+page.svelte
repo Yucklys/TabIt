@@ -9,7 +9,7 @@
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
   import { navigate, getIsLoading, Route } from "$lib/router.svelte";
   import { getGroups, loadGroups, runGrouping } from "$lib/groupStore.svelte";
-  import { getAutoGroupingEnabled, setAutoGroupingEnabled } from "$api/storage";
+  import { getAutoGroupingEnabled, setAutoGroupingEnabled } from "$services/storage";
   import { t } from "$lib/i18n.svelte";
 
   let autoGrouping = $state(false);

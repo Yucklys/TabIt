@@ -6,7 +6,7 @@
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
     "module": "ESNext",
-    "types": ["svelte", "vite/client", "chrome", "dom-chromium-ai"],
+    "types": ["svelte", "vite/client", "chrome", "dom-chromium-ai", "bun-types"],
     "noEmit": true,
     /**
      * Typecheck JS in `.svelte` and `.js` files by default.
@@ -21,8 +21,10 @@
 	"paths": {
 	  "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"],
-      "$api/*": ["./src/api/*"],
-      "$type/*": ["./src/type/*"]
+      "$services/*": ["./src/services/*"],
+      "$core/*": ["./src/core/*"],
+      "$type/*": ["./src/type/*"],
+      "$utils/*": ["./src/utils/*"]
 	}
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]

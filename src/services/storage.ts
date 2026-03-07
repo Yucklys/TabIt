@@ -1,14 +1,12 @@
 /**
  * Chrome Storage utilities for user settings
  */
-import { type GroupingMode } from '../type/groupingMode';
 
 export type Language = 'en' | 'ja' | 'es';
 
 export interface UserSettings {
   customPrompt?: string;
   customGroups?: string[];
-  selectedMode?: GroupingMode;
   tabRange?: [number, number];
   similarityThreshold?: number;
   autoGroupingEnabled?: boolean;
@@ -21,11 +19,10 @@ export async function saveUserSettings(settings: Partial<UserSettings>): Promise
 }
 
 export async function getUserSettings(): Promise<UserSettings> {
-  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'selectedMode', 'tabRange', 'similarityThreshold', 'autoGroupingEnabled', 'groupCategories']);
+  const result = await chrome.storage.local.get(['customPrompt', 'customGroups', 'tabRange', 'similarityThreshold', 'autoGroupingEnabled', 'groupCategories']);
   return {
     customPrompt: typeof result.customPrompt === 'string' ? result.customPrompt : '',
     customGroups: Array.isArray(result.customGroups) ? result.customGroups : [],
-    selectedMode: (result.selectedMode === 'smart' || result.selectedMode === 'oneTime' || result.selectedMode === 'aggressive') ? result.selectedMode : 'smart',
     tabRange: (Array.isArray(result.tabRange) && result.tabRange.length === 2) ? result.tabRange as [number, number] : [1, 6],
     similarityThreshold: typeof result.similarityThreshold === 'number' ? result.similarityThreshold : 0.7,
     autoGroupingEnabled: typeof result.autoGroupingEnabled === 'boolean' ? result.autoGroupingEnabled : false,
@@ -60,15 +57,6 @@ export async function setCustomGroups(groups: string[]): Promise<void> {
   await chrome.storage.local.set({ customGroups: groups });
 }
 
-export async function getSelectedMode(): Promise<GroupingMode> {
-  const result = await chrome.storage.local.get('selectedMode');
-  return (result.selectedMode === 'smart' || result.selectedMode === 'oneTime' || result.selectedMode === 'aggressive') ? result.selectedMode : 'smart';
-}
-
-export async function setSelectedMode(mode: GroupingMode): Promise<void> {
-  await chrome.storage.local.set({ selectedMode: mode });
-}
-
 export async function getSimilarityThreshold(): Promise<number> {
   const result = await chrome.storage.local.get('similarityThreshold');
   return typeof result.similarityThreshold === 'number' ? result.similarityThreshold : 0.7;
@@ -101,7 +89,7 @@ export async function setGroupCategories(categories: { [category: string]: numbe
 
 export async function getLanguage(): Promise<Language> {
   const result = await chrome.storage.local.get('language');
-  return result.language || 'en';
+  return (result.language as Language) || 'en';
 }
 
 export async function setLanguage(language: Language): Promise<void> {

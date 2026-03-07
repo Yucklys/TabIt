@@ -1,4 +1,4 @@
-import type { TabProps } from '@/type/tabProps';
+import type { TabProps } from '$type/tabProps';
 import { groupTabsByDomain, getTabIds } from './domainGrouper';
 import { buildSimilarityScorer, buildDomainGroupMatrix, nameClusters } from './tfidfSimilarity';
 import { hierarchicalClustering } from './hierarchicalClustering';

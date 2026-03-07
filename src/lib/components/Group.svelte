@@ -2,9 +2,9 @@
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index";
   import { EllipsisVertical, ArrowRight } from "@lucide/svelte";
   import {
-    renameGroup,
-    changeGroupColor,
-    ungroupGroup,
+    renameGroupAction,
+    changeGroupColorAction,
+    ungroupGroupAction,
     activateTab,
   } from "$lib/groupStore.svelte";
   import { t } from "$lib/i18n.svelte";
@@ -52,18 +52,18 @@
   const handleRename = async () => {
     const newTitle = prompt(t('group.rename_prompt'), name);
     if (newTitle && newTitle.trim()) {
-      await renameGroup(groupId, newTitle.trim());
+      await renameGroupAction(groupId, newTitle.trim());
       await onMutated?.();
     }
   };
 
   const handleChangeColor = async () => {
-    await changeGroupColor(groupId, chromeColor as chrome.tabGroups.Color | undefined);
+    await changeGroupColorAction(groupId, chromeColor as chrome.tabGroups.Color | undefined);
     await onMutated?.();
   };
 
   const handleUngroup = async () => {
-    await ungroupGroup(groupId);
+    await ungroupGroupAction(groupId);
     await onMutated?.();
   };
 
