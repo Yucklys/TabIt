@@ -53,7 +53,7 @@ export function buildKnnGraph(
 /**
  * Compute weighted degree of a node (sum of all edge weights).
  */
-function weightedDegree(graph: WeightedGraph, node: number): number {
+export function weightedDegree(graph: WeightedGraph, node: number): number {
   let deg = 0;
   const nodeNeighbors = graph.neighbors.get(node);
   if (!nodeNeighbors) return 0;
@@ -66,7 +66,7 @@ function weightedDegree(graph: WeightedGraph, node: number): number {
 /**
  * Total weight of all edges in the graph (each edge counted once).
  */
-function totalWeight(graph: WeightedGraph): number {
+export function totalWeight(graph: WeightedGraph): number {
   let total = 0;
   for (const [node, nodeNeighbors] of graph.neighbors) {
     for (const [neighbor, w] of nodeNeighbors) {
@@ -92,7 +92,7 @@ function totalWeight(graph: WeightedGraph): number {
  * - k_i = weighted degree of node
  * - m = total edge weight
  */
-function modularityGain(
+export function modularityGain(
   graph: WeightedGraph,
   node: number,
   targetCommunity: Set<number>,

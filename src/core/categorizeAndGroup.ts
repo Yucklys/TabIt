@@ -1,8 +1,16 @@
 import { getTabProps, getTitleById } from '$services/tabs';
 import { clusterAndGroup as runClustering } from './clustering/clusteringPipeline';
+import { incrementalClusterAndGroup } from './clustering/incrementalClustering';
 import { getSimilarityThreshold, getTabRange } from '$services/storage';
 
 type Tab = chrome.tabs.Tab;
+
+export interface CategorizeNewTabsResult {
+  /** Existing group IDs to add tabs to */
+  merged: Array<{ groupId: number; tabIds: number[] }>;
+  /** New group names → tab IDs */
+  created: Record<string, [number, ...number[]]>;
+}
 
 /**
  * Core clustering logic - categorizes tabs using TF-IDF + HAC
@@ -28,6 +36,41 @@ export async function categorizeTabs(
   console.log('Categorized Titles:', categorizedTitles);
 
   return categorizedResult;
+}
+
+/**
+ * Incremental clustering entry point for auto-grouping.
+ * Builds similarity graph from ALL tabs (existing grouped + new ungrouped),
+ * freezes existing group assignments, and runs constrained local moving.
+ * Returns merge targets (by groupId) and new groups to create.
+ */
+export async function categorizeNewTabs(
+  newTabs: Tab[],
+  existingGroupInfo: Array<{ groupId: number; name: string; tabs: Tab[] }>
+): Promise<CategorizeNewTabsResult> {
+  const newTabProps = getTabProps(newTabs);
+  const existingGroups = existingGroupInfo.map(g => ({
+    name: g.name,
+    tabs: getTabProps(g.tabs),
+  }));
+
+  const tabRange = await getTabRange();
+  const similarityThreshold = await getSimilarityThreshold();
+
+  const result = await incrementalClusterAndGroup(
+    newTabProps,
+    existingGroups,
+    tabRange,
+    similarityThreshold
+  );
+
+  // Map groupIndex → groupId
+  const merged = result.merged.map(m => ({
+    groupId: existingGroupInfo[m.groupIndex].groupId,
+    tabIds: m.tabIds,
+  }));
+
+  return { merged, created: result.created };
 }
 
 /**

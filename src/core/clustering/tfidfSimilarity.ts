@@ -222,34 +222,56 @@ function toTitleCase(s: string): string {
 }
 
 /**
- * Name communities using TF-IDF keyword extraction.
- * For each community (array of tab indices), picks the top keyword.
- * Handles collisions by falling back to the next keyword.
- * Falls back to the most common domain if no keywords are available.
+ * Strip common TLDs from a domain and return a clean name.
+ * e.g. "tailwindcss.com" → "tailwindcss", "docs.python.org" → "python"
+ */
+function domainToName(domain: string): string {
+  const stripped = domain.replace(/\.(com|org|net|io|dev|co|edu|gov|me|app|xyz|info)$/i, '');
+  // If subdomains remain (e.g. "docs.python"), take the last segment (primary name)
+  const parts = stripped.split('.');
+  return parts[parts.length - 1];
+}
+
+/**
+ * Name communities using domain awareness + TF-IDF keyword extraction.
+ * Prefers the shared domain name when all tabs in a community share one.
+ * Falls back to top TF-IDF keyword, then most common domain.
  */
 export function nameCommunities(
   communities: Community[],
   tabs: TabProps[],
-  scorer: TabSimilarityScorer
+  scorer: TabSimilarityScorer,
+  existingNames?: string[]
 ): string[] {
   const result: string[] = [];
-  const usedNames = new Set<string>();
+  const usedNames = new Set<string>(existingNames?.map(n => toTitleCase(n)));
 
   for (const community of communities) {
-    // Get top keywords for the community
-    const keywords = scorer.clusterKeywords(community, 5);
-
-    // Pick first unused keyword
     let name: string | null = null;
-    for (const kw of keywords) {
-      const titled = toTitleCase(kw);
+
+    // Prefer shared domain name when all tabs share the same domain
+    const domains = community.map(idx => tabs[idx]?.domain).filter(Boolean);
+    const uniqueDomains = new Set(domains);
+    if (uniqueDomains.size === 1) {
+      const titled = toTitleCase(domainToName(domains[0]));
       if (!usedNames.has(titled)) {
         name = titled;
-        break;
       }
     }
 
-    // Fallback: most common domain
+    // Fall back to TF-IDF keywords
+    if (!name) {
+      const keywords = scorer.clusterKeywords(community, 5);
+      for (const kw of keywords) {
+        const titled = toTitleCase(kw);
+        if (!usedNames.has(titled)) {
+          name = titled;
+          break;
+        }
+      }
+    }
+
+    // Last resort: most common domain
     if (!name) {
       const domainCounts = new Map<string, number>();
       for (const idx of community) {
@@ -264,7 +286,7 @@ export function nameCommunities(
           bestCount = count;
         }
       }
-      name = toTitleCase(bestDomain);
+      name = toTitleCase(domainToName(bestDomain));
       // If still collides, append a number
       if (usedNames.has(name)) {
         let suffix = 2;

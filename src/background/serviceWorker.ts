@@ -4,7 +4,7 @@
  * Uses the same AI clustering pipeline as the popup UI
  */
 
-import { categorizeTabs } from '$core/categorizeAndGroup';
+import { categorizeNewTabs } from '$core/categorizeAndGroup';
 import { createTabGroupFromIds, getAllTabGroups } from '$services/tabGroups';
 import { getUngroupedTabs } from '$services/tabs';
 
@@ -14,30 +14,16 @@ async function isAutoGroupingEnabled(): Promise<boolean> {
   return result.autoGroupingEnabled === true;
 }
 
-// Filter out chrome:// and chrome-extension:// tabs
-function filterValidTabs(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab[] {
-  return tabs.filter((tab) => {
-    if (!tab.url) return false;
-    try {
-      const url = new URL(tab.url);
-      return (
-        url.protocol !== 'chrome:' &&
-        url.protocol !== 'chrome-extension:' &&
-        url.protocol !== 'edge:' &&
-        url.protocol !== 'about:'
-      );
-    } catch {
-      return false;
-    }
-  });
-}
-
-// AI-powered auto-grouping for ungrouped tabs
+// AI-powered auto-grouping for ungrouped tabs using incremental Leiden clustering
 async function runAutoGrouping(): Promise<void> {
-  console.log('[Auto-Grouping] Starting AI-powered grouping for ungrouped tabs...');
+  console.log('[Auto-Grouping] Starting incremental clustering for ungrouped tabs...');
 
   const ungroupedTabs = await getUngroupedTabs();
-  const validTabs = filterValidTabs(ungroupedTabs);
+
+  // Filter out invalid tabs (chrome:// and extension pages)
+  const validTabs = ungroupedTabs.filter(
+    (tab) => tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')
+  );
 
   if (validTabs.length === 0) {
     console.log('[Auto-Grouping] No ungrouped tabs to process');
@@ -46,43 +32,40 @@ async function runAutoGrouping(): Promise<void> {
 
   console.log(`[Auto-Grouping] Processing ${validTabs.length} ungrouped tabs`);
 
+  // Gather existing groups WITH their member tabs
   const existingGroups = await getAllTabGroups();
+  const existingGroupInfo = await Promise.all(
+    existingGroups.map(async (group) => ({
+      groupId: group.id,
+      name: group.title || '',
+      tabs: await chrome.tabs.query({ groupId: group.id }),
+    }))
+  );
 
-  const categorized = await categorizeTabs(validTabs);
+  // Run incremental clustering
+  const result = await categorizeNewTabs(validTabs, existingGroupInfo);
 
-  if (!categorized || Object.keys(categorized).length === 0) {
-    console.log('[Auto-Grouping] No categories returned from AI pipeline');
-    return;
-  }
-
-  // Build a map of existing group titles → groupId for merging
-  const existingGroupMap = new Map<string, number>();
-  for (const group of existingGroups) {
-    if (group.title) {
-      existingGroupMap.set(group.title.toLowerCase(), group.id);
-    }
-  }
-
-  // Create or merge into tab groups
-  for (const [categoryName, tabIds] of Object.entries(categorized)) {
-    const existingGroupId = existingGroupMap.get(categoryName.toLowerCase());
-
+  // Merge into existing groups by groupId (reliable, not name matching)
+  for (const { groupId, tabIds } of result.merged) {
     try {
-      if (existingGroupId !== undefined) {
-        // Add tabs to existing group with same title
-        await chrome.tabs.group({ groupId: existingGroupId, tabIds });
-        console.log(`[Auto-Grouping] Added ${tabIds.length} tabs to existing group "${categoryName}"`);
-      } else {
-        // Create new group
-        await createTabGroupFromIds(tabIds as [number, ...number[]], categoryName);
-        console.log(`[Auto-Grouping] Created new group "${categoryName}" with ${tabIds.length} tabs`);
-      }
+      await chrome.tabs.group({ groupId, tabIds });
+      console.log(`[Auto-Grouping] Merged ${tabIds.length} tabs into group ${groupId}`);
     } catch (error) {
-      console.error(`[Auto-Grouping] Error grouping "${categoryName}":`, error);
+      console.error(`[Auto-Grouping] Error merging into group ${groupId}:`, error);
     }
   }
 
-  console.log('[Auto-Grouping] AI-powered grouping complete');
+  // Create new groups
+  for (const [name, tabIds] of Object.entries(result.created)) {
+    try {
+      await createTabGroupFromIds(tabIds as [number, ...number[]], name);
+      console.log(`[Auto-Grouping] Created new group "${name}" with ${tabIds.length} tabs`);
+    } catch (error) {
+      console.error(`[Auto-Grouping] Error creating group "${name}":`, error);
+    }
+  }
+
+  console.log('[Auto-Grouping] Incremental clustering complete');
 }
 
 // Debounce timer for auto-grouping
