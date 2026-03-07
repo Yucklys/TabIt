@@ -25,9 +25,10 @@ const STOP_WORDS = new Set([
   'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an',
   'will', 'my', 'one', 'all', 'would', 'there', 'their', 'what', 'so',
   'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me',
-  // Web noise
+  // Web/browser noise
   'http', 'https', 'www', 'com', 'org', 'net', 'io', 'html', 'htm',
   'index', 'page', 'en', 'us', 'new', 'web', 'app', 'site',
+  'tab', 'untitled', 'loading', 'home', 'welcome',
 ]);
 
 // --- Tokenization ---
