@@ -1,7 +1,8 @@
 import { test, expect, describe } from 'bun:test';
-import { tokenize, buildSimilarityScorer, buildDomainGroupMatrix, getSimilarity } from './tfidfSimilarity';
+import { tokenize, buildSimilarityScorer, buildDomainGroupMatrix, getSimilarity, nameClusters } from './tfidfSimilarity';
 import type { TabProps } from '$type/tabProps';
 import type { DomainGroup } from './domainGrouper';
+import type { Cluster } from './hierarchicalClustering';
 
 // --- Tokenization ---
 
@@ -208,6 +209,113 @@ describe('buildDomainGroupMatrix', () => {
     for (const g of domainGroups) {
       expect(matrix.has(g.domain)).toBe(true);
     }
+  });
+});
+
+// --- clusterKeywords ---
+
+describe('clusterKeywords', () => {
+  const tabs = makeTabs([
+    { title: 'React Documentation', domain: 'react.dev', path: '/docs/getting-started' },
+    { title: 'React Hooks Reference', domain: 'react.dev', path: '/docs/hooks' },
+    { title: 'Buy Running Shoes', domain: 'amazon.com', path: '/shoes/running' },
+    { title: 'Best Running Shoes 2024', domain: 'runnersworld.com', path: '/gear/shoes' },
+  ]);
+
+  const scorer = buildSimilarityScorer(tabs);
+
+  test('returns keywords related to cluster content', () => {
+    // React cluster (tabs 0, 1) — keywords come from title+path tokens
+    const reactKeywords = scorer.clusterKeywords([0, 1], 5);
+    // Should contain distinguishing terms from the React tabs
+    expect(reactKeywords.length).toBeGreaterThan(0);
+    // "hooks", "documentation", "reference" etc. are distinctive to this cluster
+    expect(reactKeywords.some(k => ['hooks', 'documentation', 'reference', 'react', 'getting', 'started'].includes(k))).toBe(true);
+  });
+
+  test('running shoes cluster returns relevant keywords', () => {
+    // Shoes cluster (tabs 2, 3)
+    const shoesKeywords = scorer.clusterKeywords([2, 3], 3);
+    expect(shoesKeywords).toContain('shoes');
+    expect(shoesKeywords).toContain('running');
+  });
+
+  test('returns at most topN keywords', () => {
+    const keywords = scorer.clusterKeywords([0, 1, 2, 3], 2);
+    expect(keywords.length).toBeLessThanOrEqual(2);
+  });
+
+  test('returns empty array for empty tab indices', () => {
+    const keywords = scorer.clusterKeywords([], 3);
+    expect(keywords).toHaveLength(0);
+  });
+});
+
+// --- nameClusters ---
+
+describe('nameClusters', () => {
+  const tabs = makeTabs([
+    { title: 'React Documentation', domain: 'react.dev', path: '/docs/getting-started' },
+    { title: 'React Hooks Reference', domain: 'react.dev', path: '/docs/hooks' },
+    { title: 'Buy Running Shoes', domain: 'amazon.com', path: '/shoes/running' },
+    { title: 'Best Running Shoes 2024', domain: 'runnersworld.com', path: '/gear/shoes' },
+  ]);
+
+  const scorer = buildSimilarityScorer(tabs);
+
+  test('assigns title-cased names to clusters', () => {
+    const clusters: Cluster[] = [
+      { id: 1, domainGroups: [{ domain: 'react.dev', tabs: [tabs[0], tabs[1]] }] },
+      { id: 2, domainGroups: [{ domain: 'amazon.com', tabs: [tabs[2]] }, { domain: 'runnersworld.com', tabs: [tabs[3]] }] },
+    ];
+
+    const names = nameClusters(clusters, tabs, scorer);
+    const values = Array.from(names.values());
+
+    // Names should be title-cased
+    for (const name of values) {
+      expect(name[0]).toBe(name[0].toUpperCase());
+    }
+  });
+
+  test('deduplicates names across clusters', () => {
+    // Two clusters with very similar content — should get different names
+    const clusters: Cluster[] = [
+      { id: 1, domainGroups: [{ domain: 'react.dev', tabs: [tabs[0]] }] },
+      { id: 2, domainGroups: [{ domain: 'react.dev', tabs: [tabs[1]] }] },
+    ];
+
+    const names = nameClusters(clusters, tabs, scorer);
+    const values = Array.from(names.values());
+
+    // All names should be unique
+    expect(new Set(values).size).toBe(values.length);
+  });
+
+  test('falls back to domain when no keywords available', () => {
+    const emptyTabs = makeTabs([
+      { title: '', domain: 'example.com', path: '/' },
+    ]);
+    const emptyScorer = buildSimilarityScorer(emptyTabs);
+    const clusters: Cluster[] = [
+      { id: 1, domainGroups: [{ domain: 'example.com', tabs: [emptyTabs[0]] }] },
+    ];
+
+    const names = nameClusters(clusters, emptyTabs, emptyScorer);
+    const name = Array.from(names.values())[0];
+
+    // Should have some name (domain fallback)
+    expect(name.length).toBeGreaterThan(0);
+  });
+
+  test('returns correct number of entries', () => {
+    const clusters: Cluster[] = [
+      { id: 1, domainGroups: [{ domain: 'react.dev', tabs: [tabs[0], tabs[1]] }] },
+      { id: 2, domainGroups: [{ domain: 'amazon.com', tabs: [tabs[2]] }, { domain: 'runnersworld.com', tabs: [tabs[3]] }] },
+    ];
+
+    const names = nameClusters(clusters, tabs, scorer);
+    expect(names.size).toBe(2);
   });
 });
 

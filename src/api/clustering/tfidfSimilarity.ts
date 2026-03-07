@@ -1,5 +1,6 @@
 import type { TabProps } from '$type/tabProps';
 import type { DomainGroup } from './domainGrouper';
+import type { Cluster } from './hierarchicalClustering';
 
 // --- Types ---
 
@@ -14,6 +15,7 @@ export interface TabSimilarityScorer {
   similarity(i: number, j: number): number;
   kNearest(i: number, k: number): Array<{ index: number; score: number }>;
   buildMatrix(): Float64Array;
+  clusterKeywords(tabIndices: number[], topN: number): string[];
   readonly size: number;
 }
 
@@ -189,10 +191,29 @@ export function buildSimilarityScorer(
     return mat;
   }
 
+  function clusterKeywords(tabIndices: number[], topN: number): string[] {
+    // Sum TF-IDF vectors for all tabs in the cluster
+    const combined: SparseVector = new Map();
+    for (const idx of tabIndices) {
+      const vec = vectors[idx];
+      if (!vec) continue;
+      for (const [term, score] of vec) {
+        combined.set(term, (combined.get(term) ?? 0) + score);
+      }
+    }
+
+    // Sort by aggregated score descending, return top N terms
+    return Array.from(combined.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, topN)
+      .map(([term]) => term);
+  }
+
   return {
     similarity,
     kNearest,
     buildMatrix,
+    clusterKeywords,
     get size() { return n; },
   };
 }
@@ -267,4 +288,83 @@ export function getSimilarity(
   domain2: string
 ): number {
   return matrix.get(domain1)?.get(domain2) ?? 0.0;
+}
+
+// --- Cluster Naming ---
+
+function toTitleCase(s: string): string {
+  return s.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/**
+ * Name clusters using TF-IDF keyword extraction.
+ * For each cluster, sums TF-IDF vectors of its tabs and picks the top keyword.
+ * Handles collisions by falling back to the next keyword.
+ * Falls back to the most common domain if no keywords are available.
+ */
+export function nameClusters(
+  clusters: Cluster[],
+  tabs: TabProps[],
+  scorer: TabSimilarityScorer
+): Map<Cluster, string> {
+  // Build tab index lookup: tabId → index in tabs array
+  const tabIndexMap = new Map<number, number>();
+  for (let i = 0; i < tabs.length; i++) {
+    tabIndexMap.set(tabs[i].id, i);
+  }
+
+  const result = new Map<Cluster, string>();
+  const usedNames = new Set<string>();
+
+  for (const cluster of clusters) {
+    // Collect tab indices for this cluster
+    const tabIndices: number[] = [];
+    for (const group of cluster.domainGroups) {
+      for (const tab of group.tabs) {
+        const idx = tabIndexMap.get(tab.id);
+        if (idx !== undefined) tabIndices.push(idx);
+      }
+    }
+
+    // Get top keywords for the cluster
+    const keywords = scorer.clusterKeywords(tabIndices, 5);
+
+    // Pick first unused keyword
+    let name: string | null = null;
+    for (const kw of keywords) {
+      const titled = toTitleCase(kw);
+      if (!usedNames.has(titled)) {
+        name = titled;
+        break;
+      }
+    }
+
+    // Fallback: most common domain
+    if (!name) {
+      const domainCounts = new Map<string, number>();
+      for (const group of cluster.domainGroups) {
+        domainCounts.set(group.domain, (domainCounts.get(group.domain) ?? 0) + group.tabs.length);
+      }
+      let bestDomain = cluster.domainGroups[0]?.domain ?? 'Group';
+      let bestCount = 0;
+      for (const [domain, count] of domainCounts) {
+        if (count > bestCount) {
+          bestDomain = domain;
+          bestCount = count;
+        }
+      }
+      name = toTitleCase(bestDomain);
+      // If still collides, append a number
+      if (usedNames.has(name)) {
+        let suffix = 2;
+        while (usedNames.has(`${name} ${suffix}`)) suffix++;
+        name = `${name} ${suffix}`;
+      }
+    }
+
+    usedNames.add(name);
+    result.set(cluster, name);
+  }
+
+  return result;
 }
