@@ -1,10 +1,7 @@
 import type { TabProps } from '$type/tabProps';
-import type { DomainGroup } from './domainGrouper';
-import type { Cluster } from './hierarchicalClustering';
+import type { Community } from './leiden';
 
 // --- Types ---
-
-export type SimilarityMatrix = Map<string, Map<string, number>>;
 
 export interface SimilarityConfig {
   textWeight: number;    // weight for TF-IDF cosine similarity (default 0.7)
@@ -218,78 +215,6 @@ export function buildSimilarityScorer(
   };
 }
 
-// --- Adapter for HAC backward compatibility ---
-
-/**
- * Convert a per-tab TF-IDF scorer into a domain-group SimilarityMatrix
- * compatible with the existing HAC pipeline.
- *
- * For each pair of domain groups, computes average pairwise similarity
- * between all tabs in the two groups.
- */
-export function buildDomainGroupMatrix(
-  tabs: TabProps[],
-  domainGroups: DomainGroup[],
-  scorer: TabSimilarityScorer
-): SimilarityMatrix {
-  // Build tab index lookup: tabId → index in tabs array
-  const tabIndexMap = new Map<number, number>();
-  for (let i = 0; i < tabs.length; i++) {
-    tabIndexMap.set(tabs[i].id, i);
-  }
-
-  const matrix: SimilarityMatrix = new Map();
-
-  // Initialize
-  for (const group of domainGroups) {
-    matrix.set(group.domain, new Map());
-  }
-
-  for (let i = 0; i < domainGroups.length; i++) {
-    const g1 = domainGroups[i];
-    // Self-similarity
-    matrix.get(g1.domain)!.set(g1.domain, 1.0);
-
-    for (let j = i + 1; j < domainGroups.length; j++) {
-      const g2 = domainGroups[j];
-
-      // Average pairwise similarity between all tabs in the two groups
-      let totalSim = 0;
-      let count = 0;
-
-      for (const t1 of g1.tabs) {
-        const idx1 = tabIndexMap.get(t1.id);
-        if (idx1 === undefined) continue;
-
-        for (const t2 of g2.tabs) {
-          const idx2 = tabIndexMap.get(t2.id);
-          if (idx2 === undefined) continue;
-
-          totalSim += scorer.similarity(idx1, idx2);
-          count++;
-        }
-      }
-
-      const avgSim = count > 0 ? totalSim / count : 0;
-      matrix.get(g1.domain)!.set(g2.domain, avgSim);
-      matrix.get(g2.domain)!.set(g1.domain, avgSim);
-    }
-  }
-
-  return matrix;
-}
-
-/**
- * Get similarity score between two domains from matrix.
- */
-export function getSimilarity(
-  matrix: SimilarityMatrix,
-  domain1: string,
-  domain2: string
-): number {
-  return matrix.get(domain1)?.get(domain2) ?? 0.0;
-}
-
 // --- Cluster Naming ---
 
 function toTitleCase(s: string): string {
@@ -297,37 +222,22 @@ function toTitleCase(s: string): string {
 }
 
 /**
- * Name clusters using TF-IDF keyword extraction.
- * For each cluster, sums TF-IDF vectors of its tabs and picks the top keyword.
+ * Name communities using TF-IDF keyword extraction.
+ * For each community (array of tab indices), picks the top keyword.
  * Handles collisions by falling back to the next keyword.
  * Falls back to the most common domain if no keywords are available.
  */
-export function nameClusters(
-  clusters: Cluster[],
+export function nameCommunities(
+  communities: Community[],
   tabs: TabProps[],
   scorer: TabSimilarityScorer
-): Map<Cluster, string> {
-  // Build tab index lookup: tabId → index in tabs array
-  const tabIndexMap = new Map<number, number>();
-  for (let i = 0; i < tabs.length; i++) {
-    tabIndexMap.set(tabs[i].id, i);
-  }
-
-  const result = new Map<Cluster, string>();
+): string[] {
+  const result: string[] = [];
   const usedNames = new Set<string>();
 
-  for (const cluster of clusters) {
-    // Collect tab indices for this cluster
-    const tabIndices: number[] = [];
-    for (const group of cluster.domainGroups) {
-      for (const tab of group.tabs) {
-        const idx = tabIndexMap.get(tab.id);
-        if (idx !== undefined) tabIndices.push(idx);
-      }
-    }
-
-    // Get top keywords for the cluster
-    const keywords = scorer.clusterKeywords(tabIndices, 5);
+  for (const community of communities) {
+    // Get top keywords for the community
+    const keywords = scorer.clusterKeywords(community, 5);
 
     // Pick first unused keyword
     let name: string | null = null;
@@ -342,10 +252,11 @@ export function nameClusters(
     // Fallback: most common domain
     if (!name) {
       const domainCounts = new Map<string, number>();
-      for (const group of cluster.domainGroups) {
-        domainCounts.set(group.domain, (domainCounts.get(group.domain) ?? 0) + group.tabs.length);
+      for (const idx of community) {
+        const domain = tabs[idx]?.domain ?? 'unknown';
+        domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + 1);
       }
-      let bestDomain = cluster.domainGroups[0]?.domain ?? 'Group';
+      let bestDomain = 'Group';
       let bestCount = 0;
       for (const [domain, count] of domainCounts) {
         if (count > bestCount) {
@@ -363,7 +274,7 @@ export function nameClusters(
     }
 
     usedNames.add(name);
-    result.set(cluster, name);
+    result.push(name);
   }
 
   return result;

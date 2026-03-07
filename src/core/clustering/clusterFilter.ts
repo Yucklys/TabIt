@@ -1,58 +1,37 @@
-import type { Cluster } from './hierarchicalClustering';
-import type { TabProps } from '$type/tabProps';
+import type { Community } from './leiden';
 
-export type FilteredClusters = {
-  validClusters: Cluster[];
-  outlierTabs: TabProps[];
+export type FilteredCommunities = {
+  validCommunities: Community[];
+  outlierTabIndices: number[];
 };
 
 /**
- * Get total tab count for a cluster
+ * Filter communities by minimum size constraint.
+ * @param communities - Array of communities (each an array of tab indices)
+ * @param minSize - Minimum tabs per community (from tabRange[0])
+ * @returns Valid communities and outlier tab indices that don't meet minimum size
  */
-function getClusterTabCount(cluster: Cluster): number {
-  return cluster.domainGroups.reduce((sum, group) => sum + group.tabs.length, 0);
-}
-
-/**
- * Get all tabs from a cluster
- */
-function getClusterTabs(cluster: Cluster): TabProps[] {
-  return cluster.domainGroups.flatMap(group => group.tabs);
-}
-
-/**
- * Filter clusters by minimum size constraint
- * @param clusters - Array of clusters from HAC
- * @param minSize - Minimum tabs per cluster (from tabRange[0])
- * @returns Valid clusters and outlier tabs that don't meet minimum size
- */
-export function filterClustersBySize(
-  clusters: Cluster[],
+export function filterCommunitiesBySize(
+  communities: Community[],
   minSize: number
-): FilteredClusters {
-  const validClusters: Cluster[] = [];
-  const outlierTabs: TabProps[] = [];
+): FilteredCommunities {
+  const validCommunities: Community[] = [];
+  const outlierTabIndices: number[] = [];
 
-  console.log(`Filtering clusters: min=${minSize}`);
+  console.log(`Filtering communities: min=${minSize}`);
 
-  for (const cluster of clusters) {
-    const tabCount = getClusterTabCount(cluster);
-
-    if (tabCount < minSize) {
-      console.log(`Cluster ${cluster.id}: ${tabCount} tabs < ${minSize} (too small, marking as outliers)`);
-      outlierTabs.push(...getClusterTabs(cluster));
+  for (let i = 0; i < communities.length; i++) {
+    const community = communities[i];
+    if (community.length < minSize) {
+      console.log(`Community ${i}: ${community.length} tabs < ${minSize} (too small, marking as outliers)`);
+      outlierTabIndices.push(...community);
     } else {
-      console.log(`Cluster ${cluster.id}: ${tabCount} tabs (valid)`);
-      validClusters.push(cluster);
+      console.log(`Community ${i}: ${community.length} tabs (valid)`);
+      validCommunities.push(community);
     }
   }
 
-  console.log(`Filtering complete: ${validClusters.length} valid clusters, ${outlierTabs.length} outlier tabs`);
+  console.log(`Filtering complete: ${validCommunities.length} valid communities, ${outlierTabIndices.length} outlier tabs`);
 
-  for (const cluster of validClusters) {
-    const domains = cluster.domainGroups.map((domainGroup) => domainGroup.domain).join(", ");
-    console.log(`Cluster ${cluster.id}: ${domains}`);
-  }
-
-  return { validClusters, outlierTabs };
+  return { validCommunities, outlierTabIndices };
 }

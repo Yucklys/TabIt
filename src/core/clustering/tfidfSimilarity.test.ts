@@ -1,8 +1,6 @@
 import { test, expect, describe } from 'bun:test';
-import { tokenize, buildSimilarityScorer, buildDomainGroupMatrix, getSimilarity, nameClusters } from './tfidfSimilarity';
+import { tokenize, buildSimilarityScorer, nameCommunities } from './tfidfSimilarity';
 import type { TabProps } from '$type/tabProps';
-import type { DomainGroup } from './domainGrouper';
-import type { Cluster } from './hierarchicalClustering';
 
 // --- Tokenization ---
 
@@ -176,42 +174,6 @@ describe('buildMatrix', () => {
   });
 });
 
-// --- Domain Group Matrix Adapter ---
-
-describe('buildDomainGroupMatrix', () => {
-  const tabs = makeTabs([
-    { title: 'React Docs', domain: 'react.dev', path: '/docs' },
-    { title: 'React Hooks', domain: 'react.dev', path: '/hooks' },
-    { title: 'TypeScript Handbook', domain: 'typescriptlang.org', path: '/handbook' },
-    { title: 'Buy Shoes', domain: 'amazon.com', path: '/shoes' },
-  ]);
-
-  const domainGroups: DomainGroup[] = [
-    { domain: 'react.dev', tabs: [tabs[0], tabs[1]] },
-    { domain: 'typescriptlang.org', tabs: [tabs[2]] },
-    { domain: 'amazon.com', tabs: [tabs[3]] },
-  ];
-
-  const scorer = buildSimilarityScorer(tabs);
-  const matrix = buildDomainGroupMatrix(tabs, domainGroups, scorer);
-
-  test('self-similarity is 1', () => {
-    expect(getSimilarity(matrix, 'react.dev', 'react.dev')).toBe(1);
-    expect(getSimilarity(matrix, 'amazon.com', 'amazon.com')).toBe(1);
-  });
-
-  test('matrix is symmetric', () => {
-    expect(getSimilarity(matrix, 'react.dev', 'amazon.com'))
-      .toBe(getSimilarity(matrix, 'amazon.com', 'react.dev'));
-  });
-
-  test('matrix contains all domain groups', () => {
-    for (const g of domainGroups) {
-      expect(matrix.has(g.domain)).toBe(true);
-    }
-  });
-});
-
 // --- clusterKeywords ---
 
 describe('clusterKeywords', () => {
@@ -251,9 +213,9 @@ describe('clusterKeywords', () => {
   });
 });
 
-// --- nameClusters ---
+// --- nameCommunities ---
 
-describe('nameClusters', () => {
+describe('nameCommunities', () => {
   const tabs = makeTabs([
     { title: 'React Documentation', domain: 'react.dev', path: '/docs/getting-started' },
     { title: 'React Hooks Reference', domain: 'react.dev', path: '/docs/hooks' },
@@ -263,33 +225,23 @@ describe('nameClusters', () => {
 
   const scorer = buildSimilarityScorer(tabs);
 
-  test('assigns title-cased names to clusters', () => {
-    const clusters: Cluster[] = [
-      { id: 1, domainGroups: [{ domain: 'react.dev', tabs: [tabs[0], tabs[1]] }] },
-      { id: 2, domainGroups: [{ domain: 'amazon.com', tabs: [tabs[2]] }, { domain: 'runnersworld.com', tabs: [tabs[3]] }] },
-    ];
-
-    const names = nameClusters(clusters, tabs, scorer);
-    const values = Array.from(names.values());
+  test('assigns title-cased names to communities', () => {
+    const communities = [[0, 1], [2, 3]];
+    const names = nameCommunities(communities, tabs, scorer);
 
     // Names should be title-cased
-    for (const name of values) {
+    for (const name of names) {
       expect(name[0]).toBe(name[0].toUpperCase());
     }
   });
 
-  test('deduplicates names across clusters', () => {
-    // Two clusters with very similar content — should get different names
-    const clusters: Cluster[] = [
-      { id: 1, domainGroups: [{ domain: 'react.dev', tabs: [tabs[0]] }] },
-      { id: 2, domainGroups: [{ domain: 'react.dev', tabs: [tabs[1]] }] },
-    ];
-
-    const names = nameClusters(clusters, tabs, scorer);
-    const values = Array.from(names.values());
+  test('deduplicates names across communities', () => {
+    // Two communities with very similar content — should get different names
+    const communities = [[0], [1]];
+    const names = nameCommunities(communities, tabs, scorer);
 
     // All names should be unique
-    expect(new Set(values).size).toBe(values.length);
+    expect(new Set(names).size).toBe(names.length);
   });
 
   test('falls back to domain when no keywords available', () => {
@@ -297,25 +249,17 @@ describe('nameClusters', () => {
       { title: '', domain: 'example.com', path: '/' },
     ]);
     const emptyScorer = buildSimilarityScorer(emptyTabs);
-    const clusters: Cluster[] = [
-      { id: 1, domainGroups: [{ domain: 'example.com', tabs: [emptyTabs[0]] }] },
-    ];
+    const communities = [[0]];
 
-    const names = nameClusters(clusters, emptyTabs, emptyScorer);
-    const name = Array.from(names.values())[0];
-
+    const names = nameCommunities(communities, emptyTabs, emptyScorer);
     // Should have some name (domain fallback)
-    expect(name.length).toBeGreaterThan(0);
+    expect(names[0].length).toBeGreaterThan(0);
   });
 
   test('returns correct number of entries', () => {
-    const clusters: Cluster[] = [
-      { id: 1, domainGroups: [{ domain: 'react.dev', tabs: [tabs[0], tabs[1]] }] },
-      { id: 2, domainGroups: [{ domain: 'amazon.com', tabs: [tabs[2]] }, { domain: 'runnersworld.com', tabs: [tabs[3]] }] },
-    ];
-
-    const names = nameClusters(clusters, tabs, scorer);
-    expect(names.size).toBe(2);
+    const communities = [[0, 1], [2, 3]];
+    const names = nameCommunities(communities, tabs, scorer);
+    expect(names.length).toBe(2);
   });
 });
 
