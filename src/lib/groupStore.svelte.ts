@@ -146,3 +146,8 @@ export async function activateTab(tabId: number): Promise<void> {
     await chrome.windows.update(tab.windowId, { focused: true });
   }
 }
+
+export async function setGroupColor(groupId: number, color: chrome.tabGroups.Color): Promise<void> {
+  await chrome.tabGroups.update(groupId, { color });
+  await loadGroups();
+}

@@ -3,11 +3,23 @@
   import { EllipsisVertical, ArrowRight } from "@lucide/svelte";
   import {
     renameGroupAction,
-    changeGroupColorAction,
     ungroupGroupAction,
     activateTab,
+    setGroupColor
   } from "$lib/groupStore.svelte";
   import { t } from "$lib/i18n.svelte";
+
+  const COLOR_OPTIONS: { color: string; hex: string }[] = [
+    { color: "grey", hex: "#5f6368" },
+    { color: "blue", hex: "#1a73e8" },
+    { color: "red", hex: "#d93025" },
+    { color: "yellow", hex: "#f9ab00" },
+    { color: "green", hex: "#188038" },
+    { color: "pink", hex: "#d01884" },
+    { color: "purple", hex: "#a142f4" },
+    { color: "cyan", hex: "#007b83" },
+    { color: "orange", hex: "#fa903e" },
+  ];
 
   interface Tab {
     id: number;
@@ -83,8 +95,8 @@
     }
   };
 
-  const handleChangeColor = async () => {
-    await changeGroupColorAction(groupId, chromeColor as chrome.tabGroups.Color | undefined);
+  const handleSelectColor = async (color: string) => {
+    await setGroupColor(groupId, color as chrome.tabGroups.Color);
     await onMutated?.();
   };
 
@@ -142,9 +154,27 @@
         <DropdownMenu.Item onclick={startRename}>
           {t('group.rename')}
         </DropdownMenu.Item>
-        <DropdownMenu.Item onclick={handleChangeColor}>
-          {t('group.change_color')}
-        </DropdownMenu.Item>
+        <DropdownMenu.Sub>
+          <DropdownMenu.SubTrigger>
+            {t('group.change_color')}
+          </DropdownMenu.SubTrigger>
+          <DropdownMenu.SubContent side="left" class="!duration-0 data-[state=closed]:!animate-none mr-2">
+              <div class="color-grid">
+              {#each COLOR_OPTIONS as opt}
+                <button
+                  class="color-option"
+                  class:selected={chromeColor === opt.color}
+                  style="background-color: {opt.hex}"
+                  onclick={() => handleSelectColor(opt.color)}
+                >
+                  {#if chromeColor === opt.color}
+                    <span class="checkmark">✓</span>
+                  {/if}
+                </button>
+              {/each}
+              </div>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
         <DropdownMenu.Separator />
         <DropdownMenu.Item variant="destructive" onclick={handleUngroup}>
           {t('group.ungroup')}
@@ -338,5 +368,39 @@
   .tab-item :global(.tab-arrow) {
     color: var(--color-primary);
     flex-shrink: 0;
+  }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .color-option {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s;
+  }
+
+  .color-option:hover {
+    transform: scale(1.1);
+  }
+
+  .color-option.selected {
+    border-color: var(--color-foreground);
+  }
+
+  .checkmark {
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 </style>
