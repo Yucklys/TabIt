@@ -46,7 +46,7 @@
 </script>
 
 <main>
-  <Card.Root class="w-[420px] h-[600px] p-8 flex flex-col gap-3">
+  <Card.Root class="w-[420px] h-[600px] p-8 flex flex-col gap-3 rounded-none border-0">
     <!-- Back button -->
     <button class="back-button" onclick={() => navigate(Route.Suggestion)}>
       <ChevronLeft size={20} />

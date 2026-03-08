@@ -29,6 +29,9 @@
   let { name, tabCount, color = "#ff4f4f", tabs = [], groupId, chromeColor, onMutated }: Props = $props();
 
   let isExpanded = $state(false);
+  let isEditing = $state(false);
+  let editValue = $state("");
+  let inputRef: HTMLInputElement | undefined = $state();
 
   // Generate human-readable timestamp from lastAccessTime
   function formatTimestamp(lastAccessTime: number): string {
@@ -49,11 +52,34 @@
     [...tabs].sort((a, b) => b.lastAccessTime - a.lastAccessTime)
   );
 
-  const handleRename = async () => {
-    const newTitle = prompt(t('group.rename_prompt'), name);
-    if (newTitle && newTitle.trim()) {
-      await renameGroupAction(groupId, newTitle.trim());
+  const startRename = () => {
+    editValue = name;
+    isEditing = true;
+    setTimeout(() => inputRef?.focus(), 0);
+  };
+
+  const cancelRename = () => {
+    isEditing = false;
+    editValue = "";
+  };
+
+  const saveRename = async () => {
+    const newTitle = editValue.trim();
+    if (newTitle && newTitle !== name) {
+      await renameGroupAction(groupId, newTitle);
       await onMutated?.();
+    }
+    isEditing = false;
+    editValue = "";
+  };
+
+  const handleKeydown = (e: KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveRename();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelRename();
     }
   };
 
@@ -85,7 +111,19 @@
     ></div>
 
     <!-- Group name -->
-    <span class="group-name">{name}</span>
+    {#if isEditing}
+      <input
+        bind:this={inputRef}
+        type="text"
+        class="rename-input"
+        bind:value={editValue}
+        onkeydown={handleKeydown}
+        onblur={saveRename}
+        onclick={(e) => e.stopPropagation()}
+      />
+    {:else}
+      <span class="group-name">{name}</span>
+    {/if}
 
     <!-- Tab count -->
     <span class="tab-count">{tabCount}</span>
@@ -101,7 +139,7 @@
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Content>
-        <DropdownMenu.Item onclick={handleRename}>
+        <DropdownMenu.Item onclick={startRename}>
           {t('group.rename')}
         </DropdownMenu.Item>
         <DropdownMenu.Item onclick={handleChangeColor}>
@@ -185,6 +223,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .rename-input {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--color-foreground);
+    background: var(--color-background);
+    border: 1px solid var(--color-primary);
+    border-radius: 4px;
+    padding: 4px 8px;
+    outline: none;
   }
 
   .tab-count {

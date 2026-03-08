@@ -56,7 +56,7 @@
 </script>
 
 <main>
-  <Card.Root class="w-[420px] h-[600px] p-8 flex flex-col gap-3">
+  <Card.Root class="w-[420px] h-[600px] p-8 flex flex-col gap-3 rounded-none border-0">
     <Header />
 
     <div class="flex-1 min-h-0 flex flex-col gap-4 overflow-y-auto">
