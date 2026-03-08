@@ -7,6 +7,7 @@
 import { categorizeNewTabs } from '$core/categorizeAndGroup';
 import { createTabGroupFromIds, getAllTabGroups } from '$services/tabGroups';
 import { getUngroupedTabs } from '$services/tabs';
+import { extractDomain } from '$utils/url';
 
 // Helper to check if auto-grouping is enabled
 async function isAutoGroupingEnabled(): Promise<boolean> {
@@ -20,17 +21,12 @@ async function runAutoGrouping(): Promise<void> {
 
   const ungroupedTabs = await getUngroupedTabs();
 
-  // Filter out invalid tabs (chrome:// and extension pages)
-  const validTabs = ungroupedTabs.filter(
-    (tab) => tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')
-  );
-
-  if (validTabs.length === 0) {
+  if (ungroupedTabs.length === 0) {
     console.log('[Auto-Grouping] No ungrouped tabs to process');
     return;
   }
 
-  console.log(`[Auto-Grouping] Processing ${validTabs.length} ungrouped tabs`);
+  console.log(`[Auto-Grouping] Processing ${ungroupedTabs.length} ungrouped tabs`);
 
   // Gather existing groups WITH their member tabs
   const existingGroups = await getAllTabGroups();
@@ -43,7 +39,7 @@ async function runAutoGrouping(): Promise<void> {
   );
 
   // Run incremental clustering
-  const result = await categorizeNewTabs(validTabs, existingGroupInfo);
+  const result = await categorizeNewTabs(ungroupedTabs, existingGroupInfo);
 
   // Merge into existing groups by groupId (reliable, not name matching)
   for (const { groupId, tabIds } of result.merged) {
@@ -103,7 +99,6 @@ async function handleTabUpdated(
   changeInfo: { url?: string; status?: string },
   tab: chrome.tabs.Tab
 ): Promise<void> {
-  // Only process when URL changes or when status becomes complete
   if (!changeInfo.url && changeInfo.status !== 'complete') {
     return;
   }
@@ -112,12 +107,26 @@ async function handleTabUpdated(
     return;
   }
 
-  // Skip if tab is already grouped
-  if (tab.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
+  if (tab.groupId === chrome.tabGroups.TAB_GROUP_ID_NONE) {
+    // Ungrouped tab — schedule clustering
+    scheduleAutoGrouping();
     return;
   }
 
-  scheduleAutoGrouping();
+  // Grouped tab — only act on URL changes
+  if (!changeInfo.url) return;
+
+  // Domain coherence check: does the new domain match any sibling in the group?
+  const newDomain = extractDomain(tab.url || '');
+  const groupTabs = await chrome.tabs.query({ groupId: tab.groupId });
+  const hasDomainMatch = groupTabs.some(
+    (t) => t.id !== tab.id && extractDomain(t.url || '') === newDomain
+  );
+
+  if (!hasDomainMatch) {
+    await chrome.tabs.ungroup(tab.id!);
+    scheduleAutoGrouping();
+  }
 }
 
 // Listen for tab events
