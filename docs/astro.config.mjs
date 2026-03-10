@@ -34,6 +34,7 @@ export default defineConfig({
           items: [
             { label: 'Privacy Policy', slug: 'reference/privacy-policy' },
             { label: 'Changelog', slug: 'reference/changelog' },
+            { label: 'Contributors', slug: 'reference/contributors' },
           ],
         },
       ],

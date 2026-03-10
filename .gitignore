@@ -30,3 +30,4 @@ build
 docs/node_modules
 docs/dist
 docs/.astro
+docs/.cache
