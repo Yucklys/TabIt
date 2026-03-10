@@ -1,0 +1,34 @@
+---
+title: TabIt
+description: Smart Tab Manager for Chrome
+template: splash
+hero:
+  tagline: Organize your Chrome tabs intelligently.
+  actions:
+    - text: Get Started
+      link: /TabIt/guides/getting-started/
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/Yucklys/TabIt
+      variant: minimal
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Features
+
+<CardGrid stagger>
+  <Card title="Local Processing" icon="laptop">
+    All tab categorization runs locally in your browser using TF-IDF and Leiden clustering. No data leaves your device.
+  </Card>
+  <Card title="Smart Grouping" icon="puzzle">
+    Leiden community detection clusters related tabs based on title and URL similarity, creating meaningful groups automatically.
+  </Card>
+  <Card title="Auto Grouping" icon="rocket">
+    New tabs are automatically sorted into existing groups or new ones as you browse, keeping your workspace organized in real time.
+  </Card>
+  <Card title="Customizable" icon="setting">
+    Control group size, granularity, and grouping behavior. Rename groups, pick colors, and choose your preferred language.
+  </Card>
+</CardGrid>

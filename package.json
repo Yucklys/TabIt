@@ -7,7 +7,9 @@
     "build": "bunx --bun vite build",
     "preview": "bunx --bun vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "docs:dev": "cd docs && bun run dev",
+    "docs:build": "cd docs && bun run build"
   },
   "devDependencies": {
     "@eslint/compat": "^2.0.1",

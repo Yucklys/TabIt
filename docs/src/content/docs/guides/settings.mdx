@@ -1,0 +1,56 @@
+---
+title: Settings
+description: Reference for all TabIt settings.
+---
+
+## Tab Range
+
+Control the minimum and maximum number of tabs per group.
+
+- **Range**: 1–20
+- **Default**: 1–6
+- **Effect**: Clusters with fewer tabs than the minimum are treated as outliers and left ungrouped.
+
+Adjust this from the **Customize** page before running Smart Regroup.
+
+## Granularity
+
+Controls how many groups TabIt creates. This maps directly to the Leiden algorithm's resolution parameter.
+
+| Preset | Description |
+|--------|-------------|
+| **Few Groups** | Fewer, larger groups (resolution 0.3) |
+| **Moderate** | Balanced grouping (resolution 0.5, default) |
+| **Many Groups** | More, smaller groups (resolution 0.7) |
+
+Higher resolution values produce more, smaller clusters. Lower values produce fewer, larger clusters.
+
+## Auto Grouping
+
+Toggle automatic tab organization on or off.
+
+- **Default**: Off
+- **When enabled**: New tabs and tab URL changes trigger incremental clustering after a 3-second debounce.
+- **Location**: Main popup page
+
+## Display Mode
+
+Choose the UI theme.
+
+| Option | Description |
+|--------|-------------|
+| **Light** | Light background |
+| **Dark** | Dark background |
+| **System** | Follows your OS preference (default) |
+
+## Language
+
+Select the UI language.
+
+| Language | Code |
+|----------|------|
+| English | `en` (default) |
+| 日本語 (Japanese) | `ja` |
+| Español (Spanish) | `es` |
+
+Language changes take effect immediately across the popup UI.

@@ -1,0 +1,65 @@
+---
+title: Features
+description: A walkthrough of TabIt's features.
+---
+
+## Smart Regroup
+
+The core feature of TabIt. Click **Smart Regroup** to automatically organize all your open tabs into meaningful groups.
+
+Under the hood, TabIt:
+
+1. Scores tab similarity using TF-IDF on titles and URLs
+2. Builds a k-nearest-neighbor graph of tab relationships
+3. Runs the **Leiden community detection** algorithm to find clusters of related tabs
+4. Names each group using keyword extraction from tab titles
+5. Creates Chrome tab groups with the results
+
+Existing tab groups are preserved — Smart Regroup integrates new ungrouped tabs into existing groups or creates new ones as needed.
+
+### Customize Before Grouping
+
+Click **Customize** to adjust parameters before running Smart Regroup:
+
+- **Tab Range** — Set the minimum and maximum number of tabs per group (1–20). Clusters smaller than the minimum are treated as outliers and left ungrouped.
+- **Granularity** — Choose between three presets:
+  - **Few Groups** — Fewer, larger groups
+  - **Moderate** — Balanced grouping (default)
+  - **Many Groups** — More, smaller groups
+
+## Auto Grouping
+
+Enable **Auto Grouping** from the popup to have TabIt automatically organize new tabs as you browse.
+
+When enabled:
+
+- New tabs are analyzed and placed into existing groups or new ones after a short debounce (3 seconds)
+- Existing groups are frozen — their tabs stay in place
+- If a grouped tab navigates to a domain that no longer matches its group, it gets ungrouped and re-clustered
+- Uses incremental Leiden clustering for efficiency
+
+Toggle auto grouping on or off at any time from the main popup.
+
+## Group Management
+
+Each tab group in the popup supports:
+
+- **Rename** — Click the menu icon on a group, then select "Rename" to edit the group name inline. Press Enter to confirm or Escape to cancel.
+- **Change Color** — Pick from 9 colors: grey, blue, red, yellow, green, pink, purple, cyan, and orange.
+- **Ungroup** — Dissolve a group, returning its tabs to the ungrouped state.
+- **View Tabs** — Click a group to expand it and see all its tabs, sorted by most recently accessed.
+- **Activate Tab** — Click any tab in the list to switch to it.
+
+## Domain Coherence
+
+When auto grouping is active, TabIt monitors grouped tabs for domain changes. If a tab navigates to a URL whose domain no longer matches its sibling tabs, TabIt automatically ungrouped it and re-evaluates its placement. This keeps groups coherent as you browse.
+
+## Internationalization
+
+TabIt supports multiple languages:
+
+- **English** (default)
+- **Japanese** (日本語)
+- **Spanish** (Español)
+
+Change the language in [Settings](/TabIt/guides/settings/).

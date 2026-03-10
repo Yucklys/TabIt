@@ -1,0 +1,46 @@
+---
+title: Getting Started
+description: Install TabIt and organize your first tabs.
+---
+
+## Prerequisites
+
+- **Google Chrome** (version 89 or later, for tab groups support)
+
+## Installation
+
+### From Chrome Web Store
+
+Install TabIt directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/tabit/balfedbffogihlkfffhngojhmjpjfpcf).
+
+### Build from Source
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Yucklys/TabIt.git
+   cd TabIt
+   ```
+
+2. Install dependencies and build:
+   ```bash
+   bun install
+   bun run build
+   ```
+
+3. Load the extension in Chrome:
+   - Navigate to `chrome://extensions`
+   - Enable **Developer mode** (top right toggle)
+   - Click **Load unpacked**
+   - Select the `build/` folder
+
+## First Use
+
+1. **Open several tabs** — the more tabs you have, the better TabIt can find meaningful groups.
+
+2. **Click the TabIt icon** in your browser toolbar to open the popup.
+
+3. **Click "Smart Regroup"** to automatically organize your tabs into groups. TabIt analyzes tab titles and URLs to find related tabs and groups them together.
+
+4. **Review your groups** — expand any group to see its tabs, rename it, or change its color.
+
+That's it! For ongoing organization, enable [Auto Grouping](/TabIt/guides/features/#auto-grouping) to keep new tabs sorted automatically.
