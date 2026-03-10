@@ -18,20 +18,13 @@ export function filterCommunitiesBySize(
   const validCommunities: Community[] = [];
   const outlierTabIndices: number[] = [];
 
-  console.log(`Filtering communities: min=${minSize}`);
-
-  for (let i = 0; i < communities.length; i++) {
-    const community = communities[i];
+  for (const community of communities) {
     if (community.length < minSize) {
-      console.log(`Community ${i}: ${community.length} tabs < ${minSize} (too small, marking as outliers)`);
       outlierTabIndices.push(...community);
     } else {
-      console.log(`Community ${i}: ${community.length} tabs (valid)`);
       validCommunities.push(community);
     }
   }
-
-  console.log(`Filtering complete: ${validCommunities.length} valid communities, ${outlierTabIndices.length} outlier tabs`);
 
   return { validCommunities, outlierTabIndices };
 }

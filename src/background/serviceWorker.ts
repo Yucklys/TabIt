@@ -1,7 +1,6 @@
 /**
  * Background Service Worker for TabIt Extension
  * Handles automatic tab categorization when auto-grouping is enabled
- * Uses the same AI clustering pipeline as the popup UI
  */
 
 import { categorizeNewTabs } from '$core/categorizeAndGroup';
@@ -15,18 +14,13 @@ async function isAutoGroupingEnabled(): Promise<boolean> {
   return result.autoGroupingEnabled === true;
 }
 
-// AI-powered auto-grouping for ungrouped tabs using incremental Leiden clustering
+// Auto-grouping for ungrouped tabs using incremental Leiden clustering
 async function runAutoGrouping(): Promise<void> {
-  console.log('[Auto-Grouping] Starting incremental clustering for ungrouped tabs...');
-
   const ungroupedTabs = await getUngroupedTabs();
 
   if (ungroupedTabs.length === 0) {
-    console.log('[Auto-Grouping] No ungrouped tabs to process');
     return;
   }
-
-  console.log(`[Auto-Grouping] Processing ${ungroupedTabs.length} ungrouped tabs`);
 
   // Gather existing groups WITH their member tabs
   const existingGroups = await getAllTabGroups();
@@ -45,7 +39,6 @@ async function runAutoGrouping(): Promise<void> {
   for (const { groupId, tabIds } of result.merged) {
     try {
       await chrome.tabs.group({ groupId, tabIds });
-      console.log(`[Auto-Grouping] Merged ${tabIds.length} tabs into group ${groupId}`);
     } catch (error) {
       console.error(`[Auto-Grouping] Error merging into group ${groupId}:`, error);
     }
@@ -55,13 +48,11 @@ async function runAutoGrouping(): Promise<void> {
   for (const [name, tabIds] of Object.entries(result.created)) {
     try {
       await createTabGroupFromIds(tabIds as [number, ...number[]], name);
-      console.log(`[Auto-Grouping] Created new group "${name}" with ${tabIds.length} tabs`);
     } catch (error) {
       console.error(`[Auto-Grouping] Error creating group "${name}":`, error);
     }
   }
 
-  console.log('[Auto-Grouping] Incremental clustering complete');
 }
 
 // Debounce timer for auto-grouping
@@ -146,8 +137,8 @@ chrome.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.autoGroupingEnabled) {
     const enabled = changes.autoGroupingEnabled.newValue;
-    console.log(`[Auto-Grouping] ${enabled ? 'Enabled' : 'Disabled'}`);
+    if (enabled) {
+      scheduleAutoGrouping();
+    }
   }
 });
-
-console.log('[TabIt] Service worker loaded');

@@ -15,32 +15,23 @@ export async function clusterAndGroup(
   tabRange: [number, number],
   similarityThreshold: number = 0.5
 ): Promise<{ [category: string]: [number, ...number[]] }> {
-  console.log('=== Starting Clustering Pipeline (Leiden) ===');
-  console.log(`Input: ${tabs.length} tabs, tabRange: [${tabRange[0]}, ${tabRange[1]}], threshold: ${similarityThreshold}`);
-
   // Phase 1: Build TF-IDF similarity scorer
-  console.log(`\n[Phase 1] Building TF-IDF similarity scorer...`);
   const scorer = buildSimilarityScorer(tabs);
 
   // Phase 2: Build k-NN graph
-  console.log(`\n[Phase 2] Building k-NN graph...`);
   const graph = buildKnnGraph(scorer);
 
   // Phase 3: Run Leiden with resolution = similarityThreshold
-  console.log(`\n[Phase 3] Running Leiden community detection (resolution: ${similarityThreshold})...`);
   const assignment = leiden(graph, similarityThreshold);
   const communities = extractCommunities(assignment, graph);
-  console.log(`Found ${communities.length} communities`);
 
   // Phase 4: Filter communities by size
-  console.log(`\n[Phase 4] Filtering communities by size...`);
-  const { validCommunities, outlierTabIndices } = filterCommunitiesBySize(
+  const { validCommunities } = filterCommunitiesBySize(
     communities,
     tabRange[0]
   );
 
   // Phase 5: Name communities + convert to output format
-  console.log(`\n[Phase 5] Naming communities...`);
   const communityNames = nameCommunities(validCommunities, tabs, scorer);
 
   const result: { [category: string]: [number, ...number[]] } = {};
@@ -60,10 +51,6 @@ export async function clusterAndGroup(
       }
     }
   }
-
-  console.log(`\n=== Clustering Pipeline Complete ===`);
-  console.log(`Created ${Object.keys(result).length} categories, ${outlierTabIndices.length} outlier tabs`);
-  console.log('Categories:', Object.keys(result));
 
   return result;
 }
