@@ -1,38 +1,57 @@
-# Tabit
+# TabIt
 
-TabSense is an AI driven Tab Manager for Chrome.
+TabIt is a smart tab manager for Chrome that automatically organizes your tabs into meaningful groups using TF-IDF similarity scoring and Leiden community detection — all processed locally in your browser.
 
-## What is this?
+## Features
+
+- **Smart Regroup** — Automatically cluster related tabs based on title and URL similarity
+- **Auto Grouping** — Continuously organize new tabs as you browse
+- **Group Management** — Rename groups, pick colors, ungroup, and view tabs sorted by recent access
+- **Customizable** — Adjust tab range, grouping granularity, and behavior
+- **Multilingual** — English, Japanese, and Spanish
+
+## Install
+
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/tabit/balfedbffogihlkfffhngojhmjpjfpcf).
+
+## Documentation
+
+Full documentation is available at [yucklys.github.io/TabIt](https://yucklys.github.io/TabIt/).
 
 ## Development
+
 ### Dependencies
-- [Bun](https://bun.com/)
+
+- [Bun](https://bun.sh/)
 
 ### Build locally
-1. First make sure you have installed all the dependencies and cloned the repository by:
-```
-git clone https://github.com/Yucklys/TabSense
+
+1. Clone the repository:
+```bash
+git clone https://github.com/Yucklys/TabIt.git
 ```
 
-2. Go into the cloned directory and install project dependencies.
-```
+2. Install dependencies:
+```bash
 bun install
 ```
 
-3. Build the extension for Chrome
-```
+3. Build the extension:
+```bash
 bun run build
 ```
-Now, there should be a `build` folder in your cloned directory. It contains the unpacked extension files for your browser. Check the links below according to see how to add this extension to your browser.
 
-- [**Chrome**](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked)
-
-You should now be able to use the extension in your browser.
+The `build/` folder contains the unpacked extension files. Load it in Chrome via `chrome://extensions` with Developer mode enabled — see [Load an unpacked extension](https://developer.chrome.com/docs/extensions/get-started/tutorial/hello-world#load-unpacked).
 
 ### Local development
-You can start local development by:
-```
+
+```bash
 bun run dev
 ```
 
-## Copyright
+### Documentation site
+
+```bash
+bun run docs:dev     # Start dev server
+bun run docs:build   # Build for production
+```
