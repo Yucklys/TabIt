@@ -207,9 +207,9 @@ export async function incrementalClusterAndGroup(
     merged.push({ groupIndex, tabIds });
   }
 
-  // Filter new communities by min size, then name them
+  // Filter new communities by min/max size, then name them
   const newCommunities = Array.from(newCommunityMap.values());
-  const { validCommunities } = filterCommunitiesBySize(newCommunities, tabRange[0]);
+  const { validCommunities } = filterCommunitiesBySize(newCommunities, tabRange[0], tabRange[1]);
 
   const existingNames = existingGroups.map(g => g.name);
   const communityNames = nameCommunities(validCommunities, allTabs, scorer, existingNames);

@@ -7,6 +7,7 @@ import { categorizeNewTabs } from '$core/categorizeAndGroup';
 import { createTabGroupFromIds, getAllTabGroups } from '$services/tabGroups';
 import { getUngroupedTabs } from '$services/tabs';
 import { extractDomain } from '$utils/url';
+import { getTabRange } from '$services/storage';
 
 // Helper to check if auto-grouping is enabled
 async function isAutoGroupingEnabled(): Promise<boolean> {
@@ -23,14 +24,33 @@ async function runAutoGrouping(): Promise<void> {
   }
 
   // Gather existing groups WITH their member tabs
+  const tabRange = await getTabRange();
+  const minSize = tabRange[0];
+  const maxSize = tabRange[1];
+
   const existingGroups = await getAllTabGroups();
-  const existingGroupInfo = await Promise.all(
-    existingGroups.map(async (group) => ({
-      groupId: group.id,
-      name: group.title || '',
-      tabs: await chrome.tabs.query({ groupId: group.id }),
-    }))
-  );
+  const existingGroupInfo = [];
+
+  for (const group of existingGroups) {
+    const tabs = await chrome.tabs.query({ groupId: group.id });
+    
+    // If an existing group no longer meets the user's size constraints,
+    // break it up instead of reinforcing it.
+    if (tabs.length < minSize || tabs.length > maxSize) {
+      const tabIds = tabs.map(t => t.id).filter((id): id is number => id !== undefined);
+      if (tabIds.length > 0) {
+        await chrome.tabs.ungroup(tabIds as [number, ...number[]]);
+      }
+      // Those tabs just became ungrouped, we add them to the clustering pool
+      ungroupedTabs.push(...tabs);
+    } else {
+      existingGroupInfo.push({
+        groupId: group.id,
+        name: group.title || '',
+        tabs,
+      });
+    }
+  }
 
   // Run incremental clustering
   const result = await categorizeNewTabs(ungroupedTabs, existingGroupInfo);
@@ -38,7 +58,9 @@ async function runAutoGrouping(): Promise<void> {
   // Merge into existing groups by groupId (reliable, not name matching)
   for (const { groupId, tabIds } of result.merged) {
     try {
-      await chrome.tabs.group({ groupId, tabIds });
+      if (tabIds.length > 0) {
+        await chrome.tabs.group({ groupId, tabIds: tabIds as [number, ...number[]] });
+      }
     } catch (error) {
       console.error(`[Auto-Grouping] Error merging into group ${groupId}:`, error);
     }

@@ -100,10 +100,11 @@ export async function runGrouping(): Promise<void> {
       | { [category: string]: [number, ...number[]] }
       | undefined;
 
-    if (categorized && Object.keys(categorized).length > 0) {
-      // Clear all existing groups first to ensure a fresh start
-      await ungroupAllGroups();
+    // We must unconditionally clear all existing groups first to ensure a fresh start,
+    // especially if all new algorithm groups were filtered out for falling short of `min()`.
+    await ungroupAllGroups();
 
+    if (categorized && Object.keys(categorized).length > 0) {
       // Create Chrome tab groups from the categorized result
       for (const [categoryName, tabIds] of Object.entries(categorized)) {
         await createTabGroupFromIds(tabIds as [number, ...number[]], categoryName);

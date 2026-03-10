@@ -28,7 +28,8 @@ export async function clusterAndGroup(
   // Phase 4: Filter communities by size
   const { validCommunities } = filterCommunitiesBySize(
     communities,
-    tabRange[0]
+    tabRange[0],
+    tabRange[1]
   );
 
   // Phase 5: Name communities + convert to output format
