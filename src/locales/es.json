@@ -5,6 +5,7 @@
   "settings.light_mode": "Modo claro",
   "settings.dark_mode": "Modo oscuro",
   "settings.system": "Sistema",
+  "settings.help": "Ayuda y documentación",
 
   "suggestion.tab_groups": "Grupos de pestañas",
   "suggestion.groups_active": "{count} {count, plural, one {grupo} other {grupos}} activo{count, plural, one {} other {s}}",

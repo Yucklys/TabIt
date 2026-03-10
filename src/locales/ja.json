@@ -5,6 +5,7 @@
   "settings.light_mode": "ライトモード",
   "settings.dark_mode": "ダークモード",
   "settings.system": "システム",
+  "settings.help": "ヘルプとドキュメント",
 
   "suggestion.tab_groups": "タブグループ",
   "suggestion.groups_active": "{count}個のグループが有効",

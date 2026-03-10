@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { ChevronLeft } from "@lucide/svelte";
+  import { ChevronLeft, ExternalLink } from "@lucide/svelte";
   import { setMode, resetMode, userPrefersMode } from "mode-watcher";
   import * as Card from "$lib/components/ui/card/index";
   import * as ButtonGroup from "$lib/components/ui/button-group/index";
@@ -123,6 +123,19 @@
           {/each}
         </ButtonGroup.Root>
       </div>
+
+      <!-- Help & Documentation -->
+      <div>
+        <a
+          href="https://yucklys.github.io/TabIt/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="help-link"
+        >
+          {t('settings.help')}
+          <ExternalLink size={14} />
+        </a>
+      </div>
     </div>
   </Card.Root>
 </main>
@@ -236,5 +249,17 @@
     background: #4a4b4f;
   }
 
+  .help-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--color-muted-foreground);
+    text-decoration: none;
+  }
 
+  .help-link:hover {
+    color: var(--color-foreground);
+    text-decoration: underline;
+  }
 </style>

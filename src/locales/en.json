@@ -5,6 +5,7 @@
   "settings.light_mode": "Light Mode",
   "settings.dark_mode": "Dark Mode",
   "settings.system": "System",
+  "settings.help": "Help & Documentation",
 
   "suggestion.tab_groups": "Tab Groups",
   "suggestion.groups_active": "{count} {count, plural, one {group} other {groups}} active",
